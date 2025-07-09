@@ -36,6 +36,10 @@ type Value struct {
 	NumValue  float64
 	BoolValue bool
 	ArrValue  []Value
+	// IntValue stores large integers to preserve precision
+	IntValue  int64
+	// IsInt indicates if this numeric value should be treated as an integer
+	IsInt     bool
 }
 
 func NewBinaryOpNode(op TokenType, left, right *ASTNode) *ASTNode {
@@ -94,6 +98,19 @@ func NewNumberLiteralNode(value float64) *ASTNode {
 		Value: Value{
 			Type:     ValueNumber,
 			NumValue: value,
+			IsInt:    false,
+		},
+	}
+}
+
+func NewLargeIntegerLiteralNode(value int64) *ASTNode {
+	return &ASTNode{
+		Type: NodeLiteral,
+		Value: Value{
+			Type:     ValueNumber,
+			NumValue: float64(value),
+			IntValue: value,
+			IsInt:    true,
 		},
 	}
 }

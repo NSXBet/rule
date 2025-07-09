@@ -2,6 +2,7 @@ package rule
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type Parser struct {
@@ -31,6 +32,18 @@ func (p *Parser) peek() Token {
 		return p.tokens[p.current+1]
 	}
 	return Token{Type: EOF}
+}
+
+// isLargeIntegerString checks if a string represents a large integer
+func (p *Parser) isLargeIntegerString(s string) (int64, bool) {
+	// Check if it's a valid integer
+	if val, err := strconv.ParseInt(s, 10, 64); err == nil {
+		// Check if it would lose precision when converted to float64
+		if val > 9007199254740992 || val < -9007199254740992 { // 2^53
+			return val, true
+		}
+	}
+	return 0, false
 }
 
 func (p *Parser) expect(tokenType TokenType) error {
@@ -146,6 +159,12 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 	case STRING:
 		value := p.curToken.Value
 		p.advance()
+		
+		// Check if this string represents a large integer
+		if intVal, isLargeInt := p.isLargeIntegerString(value); isLargeInt {
+			return NewLargeIntegerLiteralNode(intVal), nil
+		}
+		
 		return NewStringLiteralNode(value), nil
 
 	case NUMBER:
@@ -180,16 +199,28 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 		for {
 			switch p.curToken.Type {
 			case STRING:
-				elements = append(elements, Value{
-					Type:     ValueString,
-					StrValue: p.curToken.Value,
-				})
+				value := p.curToken.Value
+				// Check if this string represents a large integer
+				if intVal, isLargeInt := p.isLargeIntegerString(value); isLargeInt {
+					elements = append(elements, Value{
+						Type:     ValueNumber,
+						NumValue: float64(intVal),
+						IntValue: intVal,
+						IsInt:    true,
+					})
+				} else {
+					elements = append(elements, Value{
+						Type:     ValueString,
+						StrValue: value,
+					})
+				}
 				p.advance()
 
 			case NUMBER:
 				elements = append(elements, Value{
 					Type:     ValueNumber,
 					NumValue: p.curToken.NumValue,
+					IsInt:    false,
 				})
 				p.advance()
 

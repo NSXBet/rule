@@ -323,8 +323,8 @@ func TestEvaluatorTypeConversions(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
-	if !result {
-		t.Error("Expected true for string '10' eq number 10")
+	if result {
+		t.Error("Expected false for string '10' eq number 10 (different categories should never compare equally)")
 	}
 }
 
