@@ -8,6 +8,7 @@ import (
 
 type Lexer struct {
 	input    string
+	runes    []rune
 	position int
 	current  rune
 	tokens   []Token
@@ -16,6 +17,7 @@ type Lexer struct {
 func NewLexer(input string) *Lexer {
 	l := &Lexer{
 		input:  input,
+		runes:  []rune(input),
 		tokens: make([]Token, 0, 32),
 	}
 	l.readChar()
@@ -23,19 +25,19 @@ func NewLexer(input string) *Lexer {
 }
 
 func (l *Lexer) readChar() {
-	if l.position >= len(l.input) {
+	if l.position >= len(l.runes) {
 		l.current = 0
 	} else {
-		l.current = rune(l.input[l.position])
+		l.current = l.runes[l.position]
 	}
 	l.position++
 }
 
 func (l *Lexer) peekChar() rune {
-	if l.position >= len(l.input) {
+	if l.position >= len(l.runes) {
 		return 0
 	}
-	return rune(l.input[l.position])
+	return l.runes[l.position]
 }
 
 func (l *Lexer) skipWhitespace() {
@@ -88,7 +90,7 @@ func (l *Lexer) readNumber() (string, float64, bool) {
 		l.readChar()
 	}
 
-	str := l.input[start : l.position-1]
+	str := string(l.runes[start : l.position-1])
 	num, _ := strconv.ParseFloat(str, 64)
 	
 	// Check if this is a large integer that would lose precision
@@ -127,7 +129,7 @@ func (l *Lexer) readIdentifier() string {
 		l.readChar()
 	}
 
-	return l.input[start : l.position-1]
+	return string(l.runes[start : l.position-1])
 }
 
 func (l *Lexer) Tokenize() []Token {
