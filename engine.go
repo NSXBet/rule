@@ -87,8 +87,3 @@ func hash(s string) uint64 {
 	}
 	return h
 }
-
-func Evaluate(rule string, context map[string]any) (bool, error) {
-	engine := NewEngine()
-	return engine.Evaluate(rule, context)
-}

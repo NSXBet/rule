@@ -55,12 +55,16 @@ func TestRulesRound1(t *testing.T) {
 		
 		// Additional edge case tests
 		AdditionalEdgeCaseTests,
+		
+		// Comprehensive datetime tests
+		DateTimeComprehensiveTests,
 	}
 
 	for _, group := range all {
+		engine := rule.NewEngine() // Fresh engine per test group
 		for _, tc := range group {
 			t.Run(tc.Name, func(t *testing.T) {
-				got, err := rule.Evaluate(tc.Query, tc.Ctx)
+				got, err := engine.Evaluate(tc.Query, tc.Ctx)
 				require.NoError(t, err, "query=%q", tc.Query)
 				require.Equal(t, tc.Result, got, "query=%q", tc.Query)
 			})

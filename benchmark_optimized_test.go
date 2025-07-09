@@ -108,12 +108,13 @@ func BenchmarkOptimizedEngineNestedProps(b *testing.B) {
 }
 
 func BenchmarkOptimizedStandalone(b *testing.B) {
+	engine := NewEngine()
 	ctx := map[string]any{"x": 10}
 	rule := "x eq 10"
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		result, err := Evaluate(rule, ctx)
+		result, err := engine.Evaluate(rule, ctx)
 		if err != nil || !result {
 			b.Fatalf("Expected true result, got %v, %v", result, err)
 		}

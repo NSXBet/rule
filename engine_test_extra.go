@@ -32,15 +32,6 @@ func TestEngineClearCache(t *testing.T) {
 	}
 }
 
-func TestEngineStandaloneEvaluate(t *testing.T) {
-	result, err := Evaluate("x eq 10", map[string]any{"x": 10})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !result {
-		t.Error("Expected true")
-	}
-}
 
 // Test engine AddQuery with parse error
 func TestEngineAddQueryParseError(t *testing.T) {

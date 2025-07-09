@@ -17,7 +17,9 @@ This is a high-performance rule engine written in Go that evaluates context-base
 The project implements a custom zero-allocation rule engine that is API-compatible with the `github.com/nikunjy/rules` library. The main interface is:
 
 ```go
-rule.Evaluate(query string, context map[string]any) (bool, error)
+// Create one engine instance and reuse it
+engine := rule.NewEngine()
+result, err := engine.Evaluate(query string, context map[string]any) (bool, error)
 ```
 
 ### Test-Driven Development
@@ -112,3 +114,8 @@ All functionality is validated through the comprehensive test suite in `test/fix
 - **Sub-100ns Requirement**: All evaluations must complete in under 100 nanoseconds
 - **Memory Efficiency**: Zero allocations during evaluation phase
 - **Concurrency Safe**: Thread-safe rule compilation and evaluation
+
+### Test Development
+- **Package Isolation**: Any custom test scripts MUST be placed in their own separate folder (not in the root directory) to avoid conflicts with the main `rule` package
+- **Main Tests**: Use the existing `test/` directory structure for all official functionality tests
+- **Debug Scripts**: For debugging, create a separate folder (e.g., `debug/`) with a `main` function and run with `go run ./debug/`. Do NOT create separate modules for each test function.
