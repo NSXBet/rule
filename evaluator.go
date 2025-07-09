@@ -3,6 +3,7 @@ package rule
 import (
 	"strconv"
 	"strings"
+	"time"
 )
 
 // EvalResult represents a typed evaluation result to avoid interface boxing
@@ -282,6 +283,18 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 			result.Bool = e.stringEndsWith(&leftResult, &rightResult)
 		case IN:
 			result.Bool = e.membershipCheck(&leftResult, &rightResult)
+		case DQ:
+			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Equal(b) })
+		case DN:
+			result.Bool = !e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Equal(b) })
+		case BE:
+			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Before(b) })
+		case BQ:
+			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) })
+		case AF:
+			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.After(b) })
+		case AQ:
+			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.After(b) || a.Equal(b) })
 		default:
 			result.IsValid = false
 			return ErrInvalidOperator
@@ -583,4 +596,44 @@ func (e *Evaluator) toString(value any) string {
 	default:
 		return ""
 	}
+}
+
+// parseDateTime attempts to parse a value as a datetime, supporting RFC 3339 and Unix timestamps
+func (e *Evaluator) parseDateTime(result *EvalResult) (time.Time, bool) {
+	switch result.Type {
+	case ValueString:
+		// Try parsing as RFC 3339 first
+		if t, err := time.Parse(time.RFC3339, result.Str); err == nil {
+			return t.UTC(), true
+		}
+		// Try parsing as Unix timestamp string
+		if unix, err := strconv.ParseInt(result.Str, 10, 64); err == nil {
+			return time.Unix(unix, 0).UTC(), true
+		}
+		return time.Time{}, false
+	case ValueNumber:
+		// Check if it's a large integer first
+		if result.IsInt {
+			return time.Unix(result.IntValue, 0).UTC(), true
+		}
+		// Unix timestamp as float (truncate to seconds)
+		return time.Unix(int64(result.Num), 0).UTC(), true
+	default:
+		return time.Time{}, false
+	}
+}
+
+// compareDateTimes compares two datetime values using the provided comparison function
+func (e *Evaluator) compareDateTimes(left, right *EvalResult, op func(time.Time, time.Time) bool) bool {
+	leftTime, leftOk := e.parseDateTime(left)
+	if !leftOk {
+		return false
+	}
+	
+	rightTime, rightOk := e.parseDateTime(right)
+	if !rightOk {
+		return false
+	}
+	
+	return op(leftTime, rightTime)
 }

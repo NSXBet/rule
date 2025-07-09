@@ -272,7 +272,7 @@ func (p *Parser) parseIdentifierOrProperty() (*ASTNode, error) {
 
 func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 	switch tokenType {
-	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, PR, EQUALS, NOT_EQUALS:
+	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, PR, DQ, DN, BE, BQ, AF, AQ, EQUALS, NOT_EQUALS:
 		return true
 	default:
 		return false

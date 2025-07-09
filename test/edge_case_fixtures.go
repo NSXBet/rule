@@ -218,4 +218,63 @@ var ExtremeValueTests = []TestCase{
 	{"special_chars", `path eq "/path/to/file@domain.com"`, map[string]any{
 		"path": "/path/to/file@domain.com",
 	}, true},
+	
+	// Datetime operators - RFC 3339 format
+	{"datetime_equal_rfc3339", `created_at dq "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:12:00Z", // Same time in UTC
+	}, true},
+	{"datetime_not_equal_rfc3339", `created_at dn "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:13:00Z", // Different time
+	}, true},
+	{"datetime_before_rfc3339", `created_at be "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:11:00Z", // 1 minute before
+	}, true},
+	{"datetime_before_or_equal_rfc3339", `created_at bq "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:12:00Z", // Equal time
+	}, true},
+	{"datetime_after_rfc3339", `created_at af "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:13:00Z", // 1 minute after
+	}, true},
+	{"datetime_after_or_equal_rfc3339", `created_at aq "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:12:00Z", // Equal time
+	}, true},
+	
+	// Datetime operators - Unix timestamp format
+	{"datetime_equal_unix", `timestamp dq 1720558320`, map[string]any{
+		"timestamp": int64(1720558320),
+	}, true},
+	{"datetime_not_equal_unix", `timestamp dn 1720558320`, map[string]any{
+		"timestamp": int64(1720558321),
+	}, true},
+	{"datetime_before_unix", `timestamp be 1720558320`, map[string]any{
+		"timestamp": int64(1720558319),
+	}, true},
+	{"datetime_before_or_equal_unix", `timestamp bq 1720558320`, map[string]any{
+		"timestamp": int64(1720558320),
+	}, true},
+	{"datetime_after_unix", `timestamp af 1720558320`, map[string]any{
+		"timestamp": int64(1720558321),
+	}, true},
+	{"datetime_after_or_equal_unix", `timestamp aq 1720558320`, map[string]any{
+		"timestamp": int64(1720558320),
+	}, true},
+	
+	// Mixed format comparisons (RFC3339 vs Unix)
+	{"datetime_mixed_rfc3339_vs_unix", `created_at af 1720558320`, map[string]any{
+		"created_at": "2024-07-09T22:12:01Z", // 1 second after the Unix timestamp
+	}, true},
+	{"datetime_mixed_unix_vs_rfc3339", `timestamp be "2024-07-09T22:12:01Z"`, map[string]any{
+		"timestamp": int64(1720558320), // 1 second before the RFC3339 time
+	}, true},
+	
+	// Edge cases
+	{"datetime_false_before", `created_at be "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:13:00Z", // After, so before should be false
+	}, false},
+	{"datetime_false_after", `created_at af "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:11:00Z", // Before, so after should be false
+	}, false},
+	{"datetime_false_equal", `created_at dq "2024-07-09T19:12:00-03:00"`, map[string]any{
+		"created_at": "2024-07-09T22:13:00Z", // Different time
+	}, false},
 }

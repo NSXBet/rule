@@ -28,6 +28,14 @@ const (
 	IN
 	PR
 
+	// Datetime Operators
+	DQ // datetime equal
+	DN // datetime not equal
+	BE // before
+	BQ // before or equal
+	AF // after
+	AQ // after or equal
+
 	// Logical
 	AND
 	OR
@@ -59,6 +67,12 @@ var keywordMap = map[string]TokenType{
 	"ew":    EW,
 	"in":    IN,
 	"pr":    PR,
+	"dq":    DQ,
+	"dn":    DN,
+	"be":    BE,
+	"bq":    BQ,
+	"af":    AF,
+	"aq":    AQ,
 	"and":   AND,
 	"or":    OR,
 	"not":   NOT,
@@ -112,6 +126,18 @@ func (t TokenType) String() string {
 		return "in"
 	case PR:
 		return "pr"
+	case DQ:
+		return "dq"
+	case DN:
+		return "dn"
+	case BE:
+		return "be"
+	case BQ:
+		return "bq"
+	case AF:
+		return "af"
+	case AQ:
+		return "aq"
 	case AND:
 		return "and"
 	case OR:
