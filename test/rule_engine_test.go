@@ -9,6 +9,7 @@ import (
 
 func TestRulesRound1(t *testing.T) {
 	all := [][]TestCase{
+		// Core functionality tests
 		EqualTests,
 		RelationalTests,
 		StringOpTests,
@@ -17,6 +18,43 @@ func TestRulesRound1(t *testing.T) {
 		LogicalTests,
 		PropCompareTests,
 		NestedPropTests,
+		
+		// Comprehensive edge case tests
+		EdgeCaseTests,
+		ComplexLogicalTests,
+		ComplexNestedLogicTests,
+		RealWorldTests,
+		RealWorldEdgeTests,
+		
+		// String and numeric edge cases
+		StringEdgeCaseTests,
+		NumericEdgeCaseTests,
+		SpecialNumericTests,
+		
+		// Array and boundary tests
+		ArrayEdgeCaseTests,
+		BoundaryConditionTests,
+		ExtremeValueTests,
+		
+		// Performance and stress tests
+		PerformanceStressTests,
+		TypeCoercionStressTests,
+		
+		// Whitespace and formatting tests
+		WhitespaceTests,
+		
+		// Advanced pattern tests
+		ComplexStringPatternTests,
+		AdvancedPrecedenceTests,
+		
+		// Presence edge cases
+		PresenceEdgeCaseTests,
+		
+		// Error boundary tests
+		ErrorBoundaryTests,
+		
+		// Additional edge case tests
+		AdditionalEdgeCaseTests,
 	}
 
 	for _, group := range all {

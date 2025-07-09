@@ -90,7 +90,10 @@ func (e *Evaluator) evaluateLiteral(node *ASTNode, result *EvalResult) error {
 func (e *Evaluator) evaluateIdentifier(node *ASTNode, result *EvalResult) error {
 	value, exists := e.context[node.Value.StrValue]
 	if !exists {
-		return ErrAttributeNotFound
+		// For missing attributes, return a special "missing" result
+		result.IsValid = false
+		result.Type = ValueString // Default type for missing
+		return nil
 	}
 	
 	result.IsValid = true
@@ -107,7 +110,10 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
 		// Navigate to the next level
 		currentMap, ok := current[key]
 		if !ok {
-			return ErrAttributeNotFound
+			// For missing nested attributes, return invalid result
+			result.IsValid = false
+			result.Type = ValueString // Default type for missing
+			return nil
 		}
 		
 		// If this is the last segment, return the value
@@ -121,11 +127,17 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
 		if nextMap, ok := currentMap.(map[string]any); ok {
 			current = nextMap
 		} else {
-			return ErrInvalidNestedAttribute
+			// For invalid nested access, return invalid result
+			result.IsValid = false
+			result.Type = ValueString // Default type for missing
+			return nil
 		}
 	}
 	
-	return ErrInvalidNestedAttribute
+	// Should not reach here, but handle gracefully
+	result.IsValid = false
+	result.Type = ValueString
+	return nil
 }
 
 func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
@@ -242,6 +254,12 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 		
 		result.Type = ValueBoolean
 		result.IsValid = true
+		
+		// If either operand is invalid (missing attribute), comparison is false
+		if !leftResult.IsValid || !rightResult.IsValid {
+			result.Bool = false
+			return nil
+		}
 		
 		switch node.Operator {
 		case EQ, EQUALS:

@@ -2,6 +2,7 @@ package rule
 
 import (
 	"strconv"
+	"strings"
 	"unicode"
 )
 
@@ -44,16 +45,40 @@ func (l *Lexer) skipWhitespace() {
 }
 
 func (l *Lexer) readString() string {
-	start := l.position
 	l.readChar() // skip opening quote
 
+	var result strings.Builder
 	for l.current != '"' && l.current != 0 {
+		if l.current == '\\' {
+			// Handle escape sequences
+			l.readChar() // consume backslash
+			if l.current == 0 {
+				break // End of input
+			}
+			switch l.current {
+			case '"':
+				result.WriteByte('"')
+			case '\\':
+				result.WriteByte('\\')
+			case 'n':
+				result.WriteByte('\n')
+			case 't':
+				result.WriteByte('\t')
+			case 'r':
+				result.WriteByte('\r')
+			default:
+				// For unrecognized escape sequences, include the backslash and character
+				result.WriteByte('\\')
+				result.WriteRune(l.current)
+			}
+		} else {
+			result.WriteRune(l.current)
+		}
 		l.readChar()
 	}
 
-	result := l.input[start : l.position-1]
 	l.readChar() // skip closing quote
-	return result
+	return result.String()
 }
 
 func (l *Lexer) readNumber() (string, float64, bool) {
