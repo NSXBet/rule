@@ -126,3 +126,10 @@ func (t TokenType) String() string {
 		return "UNKNOWN"
 	}
 }
+
+func (t Token) String() string {
+	if t.Value != "" {
+		return t.Type.String() + "(" + t.Value + ")"
+	}
+	return t.Type.String()
+}

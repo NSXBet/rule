@@ -46,6 +46,7 @@ func (e *Evaluator) evaluateNode(node *ASTNode) (any, error) {
 }
 
 func (e *Evaluator) evaluateLiteral(node *ASTNode) (any, error) {
+	// Return the value directly from the node to avoid interface boxing
 	switch node.Value.Type {
 	case ValueString:
 		return node.Value.StrValue, nil

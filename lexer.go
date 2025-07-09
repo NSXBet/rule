@@ -161,6 +161,35 @@ func (l *Lexer) Tokenize() []Token {
 			} else {
 				l.readChar()
 			}
+		case '-':
+			// Check if this is a negative number
+			if unicode.IsDigit(l.peekChar()) {
+				l.readChar() // consume the '-'
+				value, num, isLargeInt := l.readNumber()
+				// Make it negative
+				value = "-" + value
+				num = -num
+				if isLargeInt {
+					// Store large integers as strings to preserve precision
+					l.tokens = append(l.tokens, Token{
+						Type:  STRING,
+						Value: value,
+						Start: start,
+						End:   l.position - 1,
+					})
+				} else {
+					l.tokens = append(l.tokens, Token{
+						Type:     NUMBER,
+						Value:    value,
+						NumValue: num,
+						Start:    start,
+						End:      l.position - 1,
+					})
+				}
+			} else {
+				// Just a minus operator
+				l.readChar()
+			}
 		default:
 			if unicode.IsDigit(l.current) {
 				value, num, isLargeInt := l.readNumber()

@@ -74,7 +74,7 @@ func TestEngineCompileOnce(t *testing.T) {
 		t.Fatalf("failed to compile rule: %v", err)
 	}
 
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		got, err := engine.EvaluateCompiled(compiled, ctx)
 		if err != nil {
 			t.Fatalf("evaluation failed: %v", err)
@@ -116,7 +116,8 @@ func BenchmarkEngineSimple(b *testing.B) {
 	ctx := map[string]any{"x": 10}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := engine.Evaluate(rule, ctx)
 		if err != nil {
 			b.Fatal(err)
@@ -135,7 +136,8 @@ func BenchmarkEngineComplex(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := engine.Evaluate(rule, ctx)
 		if err != nil {
 			b.Fatal(err)
@@ -159,7 +161,8 @@ func BenchmarkEnginePrecompiled(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := engine.EvaluateCompiled(compiled, ctx)
 		if err != nil {
 			b.Fatal(err)
@@ -185,10 +188,98 @@ func BenchmarkEngineNested(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := engine.EvaluateCompiled(compiled, ctx)
 		if err != nil {
 			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkEngineLargeNumbers(b *testing.B) {
+	engine := NewEngine()
+	rule := "x gt 9223372036854775806"
+	ctx := map[string]any{"x": int64(9223372036854775807)}
+
+	compiled, err := engine.CompileRule(rule)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+
+	for b.Loop() {
+		_, err := engine.EvaluateCompiled(compiled, ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkEngineStringOps(b *testing.B) {
+	engine := NewEngine()
+	rule := "email co \"@example.com\" and name sw \"John\""
+	ctx := map[string]any{
+		"email": "john.doe@example.com",
+		"name":  "John Doe",
+	}
+
+	compiled, err := engine.CompileRule(rule)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+
+	for b.Loop() {
+		_, err := engine.EvaluateCompiled(compiled, ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkEngineArrayMembership(b *testing.B) {
+	engine := NewEngine()
+	rule := "status in [\"active\", \"pending\", \"verified\"]"
+	ctx := map[string]any{"status": "active"}
+
+	compiled, err := engine.CompileRule(rule)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+
+	for b.Loop() {
+		_, err := engine.EvaluateCompiled(compiled, ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkEngineZeroAlloc(b *testing.B) {
+	engine := NewEngine()
+	rule := "x gt 5"
+	ctx := map[string]any{"x": 10}
+
+	compiled, err := engine.CompileRule(rule)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for b.Loop() {
+		result, err := engine.EvaluateCompiled(compiled, ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if !result {
+			b.Fatal("Expected true")
 		}
 	}
 }
