@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-// EvalResult represents a typed evaluation result to avoid interface boxing
+// EvalResult represents a typed evaluation result to avoid interface boxing.
 type EvalResult struct {
-	Type      ValueType
-	Bool      bool
-	Num       float64
-	Str       string
-	Arr       []Value
-	IsValid   bool
+	Type    ValueType
+	Bool    bool
+	Num     float64
+	Str     string
+	Arr     []Value
+	IsValid bool
 	// OriginalValue stores the original any value for complex operations like IN with []any
 	OriginalValue any
 	// IntValue stores the original int64 value to preserve precision for large integers
@@ -22,7 +22,7 @@ type EvalResult struct {
 	IsInt bool
 }
 
-// Evaluator is an optimized evaluator that avoids allocations during evaluation
+// Evaluator is an optimized evaluator that avoids allocations during evaluation.
 type Evaluator struct {
 	context map[string]any
 	// Pre-allocated result to reuse
@@ -35,16 +35,18 @@ func NewEvaluator() *Evaluator {
 
 func (e *Evaluator) Evaluate(node *ASTNode, context map[string]any) (bool, error) {
 	e.context = context
+
 	err := e.evaluateNode(node, &e.result)
 	if err != nil {
 		return false, err
 	}
+
 	return e.toBool(&e.result), nil
 }
 
 func (e *Evaluator) evaluateNode(node *ASTNode, result *EvalResult) error {
 	result.IsValid = false
-	
+
 	switch node.Type {
 	case NodeLiteral:
 		return e.evaluateLiteral(node, result)
@@ -61,6 +63,9 @@ func (e *Evaluator) evaluateNode(node *ASTNode, result *EvalResult) error {
 	case NodeBinaryOp:
 		return e.evaluateBinaryOp(node, result)
 
+	case NodeArray:
+		return ErrInvalidNode // Arrays are not directly evaluatable
+
 	default:
 		return ErrInvalidNode
 	}
@@ -69,7 +74,7 @@ func (e *Evaluator) evaluateNode(node *ASTNode, result *EvalResult) error {
 func (e *Evaluator) evaluateLiteral(node *ASTNode, result *EvalResult) error {
 	result.Type = node.Value.Type
 	result.IsValid = true
-	
+
 	switch node.Value.Type {
 	case ValueString:
 		result.Str = node.Value.StrValue
@@ -81,10 +86,14 @@ func (e *Evaluator) evaluateLiteral(node *ASTNode, result *EvalResult) error {
 		result.Bool = node.Value.BoolValue
 	case ValueArray:
 		result.Arr = node.Value.ArrValue
+	case ValueIdentifier:
+		result.IsValid = false
+		return ErrInvalidLiteral // Identifiers should not be in literals
 	default:
 		result.IsValid = false
 		return ErrInvalidLiteral
 	}
+
 	return nil
 }
 
@@ -94,36 +103,40 @@ func (e *Evaluator) evaluateIdentifier(node *ASTNode, result *EvalResult) error 
 		// For missing attributes, return a special "missing" result
 		result.IsValid = false
 		result.Type = ValueString // Default type for missing
+
 		return nil
 	}
-	
+
 	result.IsValid = true
 	e.setResultFromAny(result, value)
+
 	return nil
 }
 
 func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
 	current := e.context
-	
+
 	for _, child := range node.Children {
 		key := child.Value.StrValue
-		
+
 		// Navigate to the next level
 		currentMap, ok := current[key]
 		if !ok {
 			// For missing nested attributes, return invalid result
 			result.IsValid = false
 			result.Type = ValueString // Default type for missing
+
 			return nil
 		}
-		
+
 		// If this is the last segment, return the value
 		if child == node.Children[len(node.Children)-1] {
 			result.IsValid = true
 			e.setResultFromAny(result, currentMap)
+
 			return nil
 		}
-		
+
 		// Otherwise, continue navigation
 		if nextMap, ok := currentMap.(map[string]any); ok {
 			current = nextMap
@@ -131,41 +144,48 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
 			// For invalid nested access, return invalid result
 			result.IsValid = false
 			result.Type = ValueString // Default type for missing
+
 			return nil
 		}
 	}
-	
+
 	// Should not reach here, but handle gracefully
 	result.IsValid = false
 	result.Type = ValueString
+
 	return nil
 }
 
 func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 	var operandResult EvalResult
-	
+
 	switch node.Operator {
 	case NOT:
 		err := e.evaluateNode(node.Left, &operandResult)
 		if err != nil {
 			return err
 		}
+
 		result.Type = ValueBoolean
 		result.Bool = !e.toBool(&operandResult)
 		result.IsValid = true
+
 		return nil
-		
+
 	case PR:
 		// Presence check - special case, don't evaluate the operand
-		if node.Left.Type == NodeIdentifier {
+		switch node.Left.Type {
+		case NodeIdentifier:
 			_, exists := e.context[node.Left.Value.StrValue]
 			result.Type = ValueBoolean
 			result.Bool = exists
 			result.IsValid = true
+
 			return nil
-		} else if node.Left.Type == NodeProperty {
+		case NodeProperty:
 			// Check nested property existence
 			current := e.context
+
 			for _, child := range node.Left.Children {
 				key := child.Value.StrValue
 				if currentValue, ok := current[key]; ok {
@@ -173,26 +193,35 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 						result.Type = ValueBoolean
 						result.Bool = true
 						result.IsValid = true
+
 						return nil
 					}
+
 					if nextMap, ok := currentValue.(map[string]any); ok {
 						current = nextMap
 					} else {
 						result.Type = ValueBoolean
 						result.Bool = false
 						result.IsValid = true
+
 						return nil
 					}
 				} else {
 					result.Type = ValueBoolean
 					result.Bool = false
 					result.IsValid = true
+
 					return nil
 				}
 			}
 		}
+
 		return ErrInvalidOperator
-	
+
+	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
+		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, DQ, DN, BE, BQ, AF, AQ, AND, OR, EQUALS, NOT_EQUALS:
+		return ErrInvalidOperator // These are not unary operators
+
 	default:
 		return ErrInvalidOperator
 	}
@@ -200,68 +229,79 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 
 func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 	var leftResult, rightResult EvalResult
-	
+
 	switch node.Operator {
 	case AND:
 		err := e.evaluateNode(node.Left, &leftResult)
 		if err != nil {
 			return err
 		}
+
 		if !e.toBool(&leftResult) {
 			result.Type = ValueBoolean
 			result.Bool = false
 			result.IsValid = true
+
 			return nil
 		}
+
 		err = e.evaluateNode(node.Right, &rightResult)
 		if err != nil {
 			return err
 		}
+
 		result.Type = ValueBoolean
 		result.Bool = e.toBool(&rightResult)
 		result.IsValid = true
+
 		return nil
-		
+
 	case OR:
 		err := e.evaluateNode(node.Left, &leftResult)
 		if err != nil {
 			return err
 		}
+
 		if e.toBool(&leftResult) {
 			result.Type = ValueBoolean
 			result.Bool = true
 			result.IsValid = true
+
 			return nil
 		}
+
 		err = e.evaluateNode(node.Right, &rightResult)
 		if err != nil {
 			return err
 		}
+
 		result.Type = ValueBoolean
 		result.Bool = e.toBool(&rightResult)
 		result.IsValid = true
+
 		return nil
-		
+
 	default:
 		// Comparison operations
 		err := e.evaluateNode(node.Left, &leftResult)
 		if err != nil {
 			return err
 		}
+
 		err = e.evaluateNode(node.Right, &rightResult)
 		if err != nil {
 			return err
 		}
-		
+
 		result.Type = ValueBoolean
 		result.IsValid = true
-		
+
 		// If either operand is invalid (missing attribute), comparison is false
 		if !leftResult.IsValid || !rightResult.IsValid {
 			result.Bool = false
 			return nil
 		}
-		
+
 		switch node.Operator {
 		case EQ, EQUALS:
 			result.Bool = e.compareEqual(&leftResult, &rightResult)
@@ -286,27 +326,48 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 		case DQ:
 			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Equal(b) })
 		case DN:
-			result.Bool = !e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Equal(b) })
+			result.Bool = !e.compareDateTimes(
+				&leftResult,
+				&rightResult,
+				func(a, b time.Time) bool { return a.Equal(b) },
+			)
 		case BE:
-			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Before(b) })
+			result.Bool = e.compareDateTimes(
+				&leftResult,
+				&rightResult,
+				func(a, b time.Time) bool { return a.Before(b) },
+			)
 		case BQ:
-			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) })
+			result.Bool = e.compareDateTimes(
+				&leftResult,
+				&rightResult,
+				func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
+			)
 		case AF:
 			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.After(b) })
 		case AQ:
-			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.After(b) || a.Equal(b) })
+			result.Bool = e.compareDateTimes(
+				&leftResult,
+				&rightResult,
+				func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
+			)
+		case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
+			AND, OR, PR, NOT:
+			result.IsValid = false
+			return ErrInvalidOperator // These are not comparison operators
+
 		default:
 			result.IsValid = false
 			return ErrInvalidOperator
 		}
-		
+
 		return nil
 	}
 }
 
 func (e *Evaluator) setResultFromAny(result *EvalResult, value any) {
 	result.OriginalValue = value
-	
+
 	switch v := value.(type) {
 	case bool:
 		result.Type = ValueBoolean
@@ -394,32 +455,34 @@ func (e *Evaluator) compareEqual(left, right *EvalResult) bool {
 			if left.IsInt && right.IsInt {
 				return left.IntValue == right.IntValue
 			}
+
 			return left.Num == right.Num
 		case ValueString:
 			return left.Str == right.Str
 		}
 	}
-	
+
 	// Allow numeric cross-type comparisons (int/float) like the original library
-	if (left.Type == ValueNumber && right.Type == ValueNumber) {
+	if left.Type == ValueNumber && right.Type == ValueNumber {
 		// If both are large integers, compare as int64 to avoid precision loss
 		if left.IsInt && right.IsInt {
 			return left.IntValue == right.IntValue
 		}
+
 		return left.Num == right.Num
 	}
-	
+
 	// No other cross-type comparisons are allowed
 	return false
 }
 
-// compareEqualStrict performs strict type comparison for membership operations
+// compareEqualStrict performs strict type comparison for membership operations.
 func (e *Evaluator) compareEqualStrict(left, right *EvalResult) bool {
 	// Strict type comparison - no cross-type conversions
 	if left.Type != right.Type {
 		return false
 	}
-	
+
 	switch left.Type {
 	case ValueBoolean:
 		return left.Bool == right.Bool
@@ -428,11 +491,12 @@ func (e *Evaluator) compareEqualStrict(left, right *EvalResult) bool {
 		if left.IsInt && right.IsInt {
 			return left.IntValue == right.IntValue
 		}
+
 		return left.Num == right.Num
 	case ValueString:
 		return left.Str == right.Str
 	}
-	
+
 	return false
 }
 
@@ -447,18 +511,18 @@ func (e *Evaluator) compareNumbers(left, right *EvalResult, op func(float64, flo
 		// Otherwise, use float64 comparison
 		return op(left.Num, right.Num)
 	}
-	
+
 	// Allow string comparisons (lexicographic)
 	if left.Type == ValueString && right.Type == ValueString {
 		cmpResult := strings.Compare(left.Str, right.Str)
 		return op(float64(cmpResult), 0)
 	}
-	
+
 	// No cross-category comparisons
 	return false
 }
 
-// compareInt64 performs int64 comparison using the float64 comparison function
+// compareInt64 performs int64 comparison using the float64 comparison function.
 func (e *Evaluator) compareInt64(left, right int64, op func(float64, float64) bool) bool {
 	if left < right {
 		return op(-1, 0)
@@ -472,18 +536,21 @@ func (e *Evaluator) compareInt64(left, right int64, op func(float64, float64) bo
 func (e *Evaluator) stringContains(left, right *EvalResult) bool {
 	leftStr := e.resultToString(left)
 	rightStr := e.resultToString(right)
+
 	return strings.Contains(leftStr, rightStr)
 }
 
 func (e *Evaluator) stringStartsWith(left, right *EvalResult) bool {
 	leftStr := e.resultToString(left)
 	rightStr := e.resultToString(right)
+
 	return strings.HasPrefix(leftStr, rightStr)
 }
 
 func (e *Evaluator) stringEndsWith(left, right *EvalResult) bool {
 	leftStr := e.resultToString(left)
 	rightStr := e.resultToString(right)
+
 	return strings.HasSuffix(leftStr, rightStr)
 }
 
@@ -492,35 +559,41 @@ func (e *Evaluator) membershipCheck(left, right *EvalResult) bool {
 	if right.Type == ValueArray && right.Arr != nil {
 		for _, item := range right.Arr {
 			var itemResult EvalResult
+
 			e.setResultFromValue(&itemResult, &item)
+
 			if e.compareEqualStrict(left, &itemResult) {
 				return true
 			}
 		}
+
 		return false
 	}
-	
+
 	// Handle []any array (from context variables)
 	if right.Type == ValueArray && right.OriginalValue != nil {
 		if arr, ok := right.OriginalValue.([]any); ok {
 			for _, item := range arr {
 				var itemResult EvalResult
+
 				e.setResultFromAny(&itemResult, item)
+
 				if e.compareEqualStrict(left, &itemResult) {
 					return true
 				}
 			}
+
 			return false
 		}
 	}
-	
+
 	return false
 }
 
 func (e *Evaluator) setResultFromValue(result *EvalResult, value *Value) {
 	result.Type = value.Type
 	result.IsValid = true
-	
+
 	switch value.Type {
 	case ValueString:
 		result.Str = value.StrValue
@@ -539,7 +612,7 @@ func (e *Evaluator) toBool(result *EvalResult) bool {
 	if !result.IsValid {
 		return false
 	}
-	
+
 	switch result.Type {
 	case ValueBoolean:
 		return result.Bool
@@ -558,7 +631,7 @@ func (e *Evaluator) resultToString(result *EvalResult) string {
 	if !result.IsValid {
 		return ""
 	}
-	
+
 	switch result.Type {
 	case ValueString:
 		return result.Str
@@ -568,6 +641,7 @@ func (e *Evaluator) resultToString(result *EvalResult) string {
 		if result.Bool {
 			return "true"
 		}
+
 		return "false"
 	default:
 		return ""
@@ -578,6 +652,7 @@ func (e *Evaluator) toNumberFromString(s string) (float64, bool) {
 	if num, err := strconv.ParseFloat(s, 64); err == nil {
 		return num, true
 	}
+
 	return 0, false
 }
 
@@ -598,7 +673,7 @@ func (e *Evaluator) toString(value any) string {
 	}
 }
 
-// parseDateTime attempts to parse a value as a datetime, supporting RFC 3339 and Unix timestamps
+// parseDateTime attempts to parse a value as a datetime, supporting RFC 3339 and Unix timestamps.
 func (e *Evaluator) parseDateTime(result *EvalResult) (time.Time, bool) {
 	switch result.Type {
 	case ValueString:
@@ -610,6 +685,7 @@ func (e *Evaluator) parseDateTime(result *EvalResult) (time.Time, bool) {
 		if unix, err := strconv.ParseInt(result.Str, 10, 64); err == nil {
 			return time.Unix(unix, 0).UTC(), true
 		}
+
 		return time.Time{}, false
 	case ValueNumber:
 		// Check if it's a large integer first
@@ -623,17 +699,17 @@ func (e *Evaluator) parseDateTime(result *EvalResult) (time.Time, bool) {
 	}
 }
 
-// compareDateTimes compares two datetime values using the provided comparison function
+// compareDateTimes compares two datetime values using the provided comparison function.
 func (e *Evaluator) compareDateTimes(left, right *EvalResult, op func(time.Time, time.Time) bool) bool {
 	leftTime, leftOk := e.parseDateTime(left)
 	if !leftOk {
 		return false
 	}
-	
+
 	rightTime, rightOk := e.parseDateTime(right)
 	if !rightOk {
 		return false
 	}
-	
+
 	return op(leftTime, rightTime)
 }

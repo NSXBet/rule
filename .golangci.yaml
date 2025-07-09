@@ -46,7 +46,7 @@ formatters:
 
 linters:
   enable:
-    - wsl # [too strict and mostly code is not more readable] whitespace linter forces you to use empty lines
+    - wsl_v5 # whitespace linter forces you to use empty lines
     - asasalint # checks for pass []any as any in variadic func(...any)
     - asciicheck # checks that your code does not contain non-ASCII identifiers
     - bidichk # checks for dangerous unicode character sequences
@@ -256,10 +256,11 @@ linters:
         - ^google.golang.org/protobuf/.+Options$
         - ^gopkg.in/yaml.v3.Node$
 
-    funcorder:
-      # Checks if the exported methods of a structure are placed before the non-exported ones.
-      # Default: true
-      struct-method: false
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+
 
     funlen:
       # Checks the number of lines in a function.

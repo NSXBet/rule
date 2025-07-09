@@ -17,6 +17,7 @@ func NewParser(tokens []Token) *Parser {
 		current: 0,
 	}
 	p.curToken = p.tokens[0]
+
 	return p
 }
 
@@ -31,10 +32,11 @@ func (p *Parser) peek() Token {
 	if p.current+1 < len(p.tokens) {
 		return p.tokens[p.current+1]
 	}
+
 	return Token{Type: EOF}
 }
 
-// isLargeIntegerString checks if a string represents a large integer
+// isLargeIntegerString checks if a string represents a large integer.
 func (p *Parser) isLargeIntegerString(s string) (int64, bool) {
 	// Check if it's a valid integer
 	if val, err := strconv.ParseInt(s, 10, 64); err == nil {
@@ -43,6 +45,7 @@ func (p *Parser) isLargeIntegerString(s string) (int64, bool) {
 			return val, true
 		}
 	}
+
 	return 0, false
 }
 
@@ -55,7 +58,9 @@ func (p *Parser) expect(tokenType TokenType) error {
 			p.current,
 		)
 	}
+
 	p.advance()
+
 	return nil
 }
 
@@ -76,10 +81,12 @@ func (p *Parser) parseOrExpression() (*ASTNode, error) {
 	for p.curToken.Type == OR {
 		op := p.curToken.Type
 		p.advance()
+
 		right, err := p.parseAndExpression()
 		if err != nil {
 			return nil, err
 		}
+
 		left = NewBinaryOpNode(op, left, right)
 	}
 
@@ -95,10 +102,12 @@ func (p *Parser) parseAndExpression() (*ASTNode, error) {
 	for p.curToken.Type == AND {
 		op := p.curToken.Type
 		p.advance()
+
 		right, err := p.parseNotExpression()
 		if err != nil {
 			return nil, err
 		}
+
 		left = NewBinaryOpNode(op, left, right)
 	}
 
@@ -108,10 +117,12 @@ func (p *Parser) parseAndExpression() (*ASTNode, error) {
 func (p *Parser) parseNotExpression() (*ASTNode, error) {
 	if p.curToken.Type == NOT {
 		p.advance()
+
 		operand, err := p.parseNotExpression()
 		if err != nil {
 			return nil, err
 		}
+
 		return NewUnaryOpNode(NOT, operand), nil
 	}
 
@@ -147,34 +158,39 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 	switch p.curToken.Type {
 	case PAREN_OPEN:
 		p.advance()
+
 		expr, err := p.parseExpression()
 		if err != nil {
 			return nil, err
 		}
+
 		if err := p.expect(PAREN_CLOSE); err != nil {
 			return nil, err
 		}
+
 		return expr, nil
 
 	case STRING:
 		value := p.curToken.Value
 		p.advance()
-		
+
 		// Check if this string represents a large integer
 		if intVal, isLargeInt := p.isLargeIntegerString(value); isLargeInt {
 			return NewLargeIntegerLiteralNode(intVal), nil
 		}
-		
+
 		return NewStringLiteralNode(value), nil
 
 	case NUMBER:
 		value := p.curToken.NumValue
 		p.advance()
+
 		return NewNumberLiteralNode(value), nil
 
 	case BOOLEAN:
 		value := p.curToken.BoolValue
 		p.advance()
+
 		return NewBooleanLiteralNode(value), nil
 
 	case ARRAY_START:
@@ -182,6 +198,35 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 
 	case IDENTIFIER:
 		return p.parseIdentifierOrProperty()
+
+	case EOF,
+		ARRAY_END,
+		PAREN_CLOSE,
+		DOT,
+		COMMA,
+		EQ,
+		NE,
+		LT,
+		GT,
+		LE,
+		GE,
+		CO,
+		SW,
+		EW,
+		IN,
+		PR,
+		DQ,
+		DN,
+		BE,
+		BQ,
+		AF,
+		AQ,
+		AND,
+		OR,
+		NOT,
+		EQUALS,
+		NOT_EQUALS:
+		return nil, fmt.Errorf("unexpected token %s at position %d", p.curToken.Type, p.current)
 
 	default:
 		return nil, fmt.Errorf("unexpected token %s at position %d", p.curToken.Type, p.current)
@@ -214,6 +259,7 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 						StrValue: value,
 					})
 				}
+
 				p.advance()
 
 			case NUMBER:
@@ -222,6 +268,7 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 					NumValue: p.curToken.NumValue,
 					IsInt:    false,
 				})
+
 				p.advance()
 
 			case BOOLEAN:
@@ -229,6 +276,7 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 					Type:      ValueBoolean,
 					BoolValue: p.curToken.BoolValue,
 				})
+
 				p.advance()
 
 			default:
@@ -256,9 +304,11 @@ func (p *Parser) parseIdentifierOrProperty() (*ASTNode, error) {
 
 	for p.curToken.Type == DOT {
 		p.advance()
+
 		if p.curToken.Type != IDENTIFIER {
 			return nil, fmt.Errorf("expected identifier after dot, got %s", p.curToken.Type)
 		}
+
 		path = append(path, p.curToken.Value)
 		p.advance()
 	}
@@ -283,5 +333,6 @@ func ParseRule(rule string) (*ASTNode, error) {
 	lexer := NewLexer(rule)
 	tokens := lexer.Tokenize()
 	parser := NewParser(tokens)
+
 	return parser.Parse()
 }

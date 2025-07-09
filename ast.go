@@ -37,9 +37,9 @@ type Value struct {
 	BoolValue bool
 	ArrValue  []Value
 	// IntValue stores large integers to preserve precision
-	IntValue  int64
+	IntValue int64
 	// IsInt indicates if this numeric value should be treated as an integer
-	IsInt     bool
+	IsInt bool
 }
 
 func NewBinaryOpNode(op TokenType, left, right *ASTNode) *ASTNode {

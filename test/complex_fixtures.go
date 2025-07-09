@@ -43,18 +43,23 @@ var ComplexLogicalTests = []TestCase{
 
 var RealWorldTests = []TestCase{
 	// User permissions
-	{"user_permissions", `user.role in permissions.roles and user.active eq true and user.profile.verified eq true`, map[string]any{
-		"user": map[string]any{
-			"role":   "admin",
-			"active": true,
-			"profile": map[string]any{
-				"verified": true,
+	{
+		"user_permissions",
+		`user.role in permissions.roles and user.active eq true and user.profile.verified eq true`,
+		map[string]any{
+			"user": map[string]any{
+				"role":   "admin",
+				"active": true,
+				"profile": map[string]any{
+					"verified": true,
+				},
+			},
+			"permissions": map[string]any{
+				"roles": []any{"admin", "moderator"},
 			},
 		},
-		"permissions": map[string]any{
-			"roles": []any{"admin", "moderator"},
-		},
-	}, true},
+		true,
+	},
 
 	// API rate limiting
 	{"rate_limiting", `request.count lt limits.max and request.user.tier eq "premium"`, map[string]any{
@@ -66,36 +71,51 @@ var RealWorldTests = []TestCase{
 	}, true},
 
 	// Feature flags
-	{"feature_flags", `user.id in features.beta_users or (user.plan eq "enterprise" and features.enterprise_enabled eq true)`, map[string]any{
-		"user": map[string]any{
-			"id":   12345,
-			"plan": "enterprise",
-		},
-		"features": map[string]any{
-			"beta_users":         []any{11111, 22222, 33333},
-			"enterprise_enabled": true,
-		},
-	}, true},
-
-	// Configuration matching
-	{"config_matching", `env.stage eq "production" and config.debug eq false and config.monitoring.enabled eq true`, map[string]any{
-		"env": map[string]any{"stage": "production"},
-		"config": map[string]any{
-			"debug": false,
-			"monitoring": map[string]any{
-				"enabled": true,
+	{
+		"feature_flags",
+		`user.id in features.beta_users or (user.plan eq "enterprise" and features.enterprise_enabled eq true)`,
+		map[string]any{
+			"user": map[string]any{
+				"id":   12345,
+				"plan": "enterprise",
+			},
+			"features": map[string]any{
+				"beta_users":         []any{11111, 22222, 33333},
+				"enterprise_enabled": true,
 			},
 		},
-	}, true},
+		true,
+	},
+
+	// Configuration matching
+	{
+		"config_matching",
+		`env.stage eq "production" and config.debug eq false and config.monitoring.enabled eq true`,
+		map[string]any{
+			"env": map[string]any{"stage": "production"},
+			"config": map[string]any{
+				"debug": false,
+				"monitoring": map[string]any{
+					"enabled": true,
+				},
+			},
+		},
+		true,
+	},
 
 	// Content filtering
-	{"content_filtering", `post.author.reputation gt 100 and not (post.content co "spam") and post.tags.category ne "adult"`, map[string]any{
-		"post": map[string]any{
-			"author": map[string]any{"reputation": 150},
-			"content": "This is a legitimate post",
-			"tags":    map[string]any{"category": "general"},
+	{
+		"content_filtering",
+		`post.author.reputation gt 100 and not (post.content co "spam") and post.tags.category ne "adult"`,
+		map[string]any{
+			"post": map[string]any{
+				"author":  map[string]any{"reputation": 150},
+				"content": "This is a legitimate post",
+				"tags":    map[string]any{"category": "general"},
+			},
 		},
-	}, true},
+		true,
+	},
 }
 
 /* ---------- Error & Boundary Cases ---------- */
@@ -105,33 +125,33 @@ var ErrorBoundaryTests = []TestCase{
 	{"missing_nested_left", "missing.attr eq 10", map[string]any{}, false},
 	{"missing_nested_right", "10 eq missing.attr", map[string]any{}, false},
 	{"missing_nested_both", "missing1.attr eq missing2.attr", map[string]any{}, false},
-	
+
 	// Deeply nested missing attributes
 	{"deep_missing_chain", "a.b.c.d.e.f eq 10", map[string]any{
 		"a": map[string]any{"b": map[string]any{"c": map[string]any{}}},
 	}, false},
-	
+
 	// Type mismatches in nested structures
 	{"nested_type_mismatch", "user.profile.age eq 25", map[string]any{
 		"user": map[string]any{"profile": "not_an_object"},
 	}, false},
-	
+
 	// Boolean edge cases
 	{"bool_vs_string", `active eq "true"`, map[string]any{"active": true}, false},
 	{"bool_vs_number", "active eq 1", map[string]any{"active": true}, false},
 	{"bool_false_vs_zero", "active eq 0", map[string]any{"active": false}, false},
-	
+
 	// Array membership with wrong types
 	{"array_membership_wrong_type", "value in array", map[string]any{
 		"value": "not_an_array",
 		"array": "also_not_an_array",
 	}, false},
-	
+
 	// Presence of deeply nested attributes
 	{"presence_missing_chain", "user.profile.settings.theme pr", map[string]any{
 		"user": map[string]any{"profile": map[string]any{}},
 	}, false},
-	
+
 	// Complex operator precedence
 	{"operator_precedence", "a eq b and c eq d or e eq f", map[string]any{
 		"a": 1, "b": 2, "c": 3, "d": 3, "e": 5, "f": 5,
@@ -142,21 +162,31 @@ var ErrorBoundaryTests = []TestCase{
 
 var ComplexNestedLogicTests = []TestCase{
 	// Deeply nested logical expressions
-	{"deeply_nested_logic", "((a eq b) and (c eq d)) or ((e eq f) and (g eq h)) or ((i eq j) and (k eq l))", map[string]any{
-		"a": 1, "b": 2, "c": 3, "d": 3, "e": 5, "f": 6, "g": 7, "h": 8, "i": 9, "j": 9, "k": 11, "l": 11,
-	}, true},
-	
-	// Mixed operators with complex nesting
-	{"mixed_operators_complex", `(user.age ge 18 and user.verified eq true) and (user.email co "@" and user.domain ne "banned.com") or user.role eq "admin"`, map[string]any{
-		"user": map[string]any{
-			"age":      25,
-			"verified": true,
-			"email":    "user@example.com",
-			"domain":   "example.com",
-			"role":     "user",
+	{
+		"deeply_nested_logic",
+		"((a eq b) and (c eq d)) or ((e eq f) and (g eq h)) or ((i eq j) and (k eq l))",
+		map[string]any{
+			"a": 1, "b": 2, "c": 3, "d": 3, "e": 5, "f": 6, "g": 7, "h": 8, "i": 9, "j": 9, "k": 11, "l": 11,
 		},
-	}, true},
-	
+		true,
+	},
+
+	// Mixed operators with complex nesting
+	{
+		"mixed_operators_complex",
+		`(user.age ge 18 and user.verified eq true) and (user.email co "@" and user.domain ne "banned.com") or user.role eq "admin"`,
+		map[string]any{
+			"user": map[string]any{
+				"age":      25,
+				"verified": true,
+				"email":    "user@example.com",
+				"domain":   "example.com",
+				"role":     "user",
+			},
+		},
+		true,
+	},
+
 	// Multiple levels of NOT
 	{"multiple_nots", "not (not (not (x eq 1)))", map[string]any{"x": 1}, false},
 	{"not_complex_expression", "not ((a eq b and c eq d) or (e eq f and g eq h))", map[string]any{
@@ -176,7 +206,7 @@ var RealWorldEdgeTests = []TestCase{
 			},
 		},
 	}, true},
-	
+
 	// HTTP-like headers
 	{"http_headers", `headers.content_type co "application/json" and headers.authorization sw "Bearer"`, map[string]any{
 		"headers": map[string]any{
@@ -184,26 +214,36 @@ var RealWorldEdgeTests = []TestCase{
 			"authorization": "Bearer token123",
 		},
 	}, true},
-	
+
 	// Database-like queries
-	{"database_query", `user.created_at ge "2023-01-01" and user.status eq "active" and user.subscription.plan in ["premium", "enterprise"]`, map[string]any{
-		"user": map[string]any{
-			"created_at": "2023-06-15",
-			"status":     "active",
-			"subscription": map[string]any{
-				"plan": "premium",
+	{
+		"database_query",
+		`user.created_at ge "2023-01-01" and user.status eq "active" and user.subscription.plan in ["premium", "enterprise"]`,
+		map[string]any{
+			"user": map[string]any{
+				"created_at": "2023-06-15",
+				"status":     "active",
+				"subscription": map[string]any{
+					"plan": "premium",
+				},
 			},
 		},
-	}, true}, // String comparison "2023-06-15" ge "2023-01-01" is true (lexicographic)
-	
+		true,
+	}, // String comparison "2023-06-15" ge "2023-01-01" is true (lexicographic)
+
 	// Configuration validation
-	{"config_validation", `config.database.host sw "localhost" and config.database.port ge 1024 and config.database.ssl eq true`, map[string]any{
-		"config": map[string]any{
-			"database": map[string]any{
-				"host": "localhost:5432",
-				"port": 5432,
-				"ssl":  true,
+	{
+		"config_validation",
+		`config.database.host sw "localhost" and config.database.port ge 1024 and config.database.ssl eq true`,
+		map[string]any{
+			"config": map[string]any{
+				"database": map[string]any{
+					"host": "localhost:5432",
+					"port": 5432,
+					"ssl":  true,
+				},
 			},
 		},
-	}, true},
+		true,
+	},
 }

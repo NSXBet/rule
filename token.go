@@ -15,7 +15,7 @@ const (
 	DOT
 	COMMA
 
-	// Operators
+	// Operators.
 	EQ
 	NE
 	LT
@@ -28,7 +28,7 @@ const (
 	IN
 	PR
 
-	// Datetime Operators
+	// Datetime Operators.
 	DQ // datetime equal
 	DN // datetime not equal
 	BE // before
@@ -36,12 +36,12 @@ const (
 	AF // after
 	AQ // after or equal
 
-	// Logical
+	// Logical.
 	AND
 	OR
 	NOT
 
-	// Aliases
+	// Aliases.
 	EQUALS     // ==
 	NOT_EQUALS // !=
 )
@@ -157,5 +157,6 @@ func (t Token) String() string {
 	if t.Value != "" {
 		return t.Type.String() + "(" + t.Value + ")"
 	}
+
 	return t.Type.String()
 }

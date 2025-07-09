@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-// BenchmarkDateTimeOperators tests all datetime operators for performance and allocations
+// BenchmarkDateTimeOperators tests all datetime operators for performance and allocations.
 func BenchmarkDateTimeOperators(b *testing.B) {
 	engine := NewEngine()
-	
+
 	// Test cases for different datetime operations
 	testCases := []struct {
 		name  string
@@ -22,7 +22,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 			map[string]any{"created_at": "2024-07-09T22:13:00Z"},
 		},
 		{
-			"RFC3339_Before_Literal", 
+			"RFC3339_Before_Literal",
 			`created_at be "2024-07-09T19:12:00-03:00"`,
 			map[string]any{"created_at": "2024-07-09T22:11:00Z"},
 		},
@@ -31,7 +31,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 			`created_at dq "2024-07-09T19:12:00-03:00"`,
 			map[string]any{"created_at": "2024-07-09T22:12:00Z"},
 		},
-		
+
 		// Unix timestamp vs literal
 		{
 			"Unix_After_Literal",
@@ -48,7 +48,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 			`timestamp dq 1720558320`,
 			map[string]any{"timestamp": int64(1720558320)},
 		},
-		
+
 		// Property vs Property
 		{
 			"Unix_Prop_vs_Prop",
@@ -74,7 +74,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 				"timestamp":  int64(1720558320),
 			},
 		},
-		
+
 		// Nested properties
 		{
 			"Nested_RFC3339_vs_Literal",
@@ -106,7 +106,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 				},
 			},
 		},
-		
+
 		// Complex expressions
 		{
 			"Complex_DateTime_And",
@@ -117,7 +117,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
 			// Verify the query works first
@@ -125,79 +125,81 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 			if err != nil {
 				b.Fatalf("Query failed: %v", err)
 			}
+
 			if !result {
 				b.Fatalf("Expected true result for test case %s", tc.name)
 			}
-			
+
 			// Reset timer and measure allocations
 			b.ResetTimer()
 			b.ReportAllocs()
-			
+
 			var memStats runtime.MemStats
+
 			runtime.ReadMemStats(&memStats)
 			allocsBefore := memStats.Mallocs
-			
-			for i := 0; i < b.N; i++ {
+
+			for range b.N {
 				_, err := engine.Evaluate(tc.query, tc.ctx)
 				if err != nil {
 					b.Fatal(err)
 				}
 			}
-			
+
 			runtime.ReadMemStats(&memStats)
 			allocsAfter := memStats.Mallocs
 			totalAllocs := allocsAfter - allocsBefore
-			
+
 			if totalAllocs > 0 {
-				b.Errorf("Expected 0 allocations, got %d total allocations for %d operations (%.2f allocs/op)", 
+				b.Errorf("Expected 0 allocations, got %d total allocations for %d operations (%.2f allocs/op)",
 					totalAllocs, b.N, float64(totalAllocs)/float64(b.N))
 			}
 		})
 	}
 }
 
-// BenchmarkDateTimeVsRegularOperators compares datetime operators with regular operators
+// BenchmarkDateTimeVsRegularOperators compares datetime operators with regular operators.
 func BenchmarkDateTimeVsRegularOperators(b *testing.B) {
 	engine := NewEngine()
-	
+
 	b.Run("DateTime_After", func(b *testing.B) {
 		query := `timestamp af 1720558320`
 		ctx := map[string]any{"timestamp": int64(1720558321)}
-		
+
 		b.ResetTimer()
 		b.ReportAllocs()
-		
-		for i := 0; i < b.N; i++ {
+
+		for range b.N {
 			_, err := engine.Evaluate(query, ctx)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
-	
+
 	b.Run("Regular_GreaterThan", func(b *testing.B) {
 		query := `timestamp gt 1720558320`
 		ctx := map[string]any{"timestamp": int64(1720558321)}
-		
+
 		b.ResetTimer()
 		b.ReportAllocs()
-		
-		for i := 0; i < b.N; i++ {
+
+		for range b.N {
 			_, err := engine.Evaluate(query, ctx)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
-	
+
 	b.Run("String_Contains", func(b *testing.B) {
 		query := `text co "test"`
 		ctx := map[string]any{"text": "this is a test string"}
-		
+
 		b.ResetTimer()
 		b.ReportAllocs()
-		
-		for i := 0; i < b.N; i++ {
+
+		for range b.N {
 			_, err := engine.Evaluate(query, ctx)
 			if err != nil {
 				b.Fatal(err)
@@ -206,40 +208,40 @@ func BenchmarkDateTimeVsRegularOperators(b *testing.B) {
 	})
 }
 
-// BenchmarkDateTimeStressCases tests edge cases that might be slower
+// BenchmarkDateTimeStressCases tests edge cases that might be slower.
 func BenchmarkDateTimeStressCases(b *testing.B) {
 	engine := NewEngine()
-	
+
 	b.Run("RFC3339_Timezone_Conversion", func(b *testing.B) {
 		query := `created_at dq "2024-07-09T19:12:00-03:00"`
 		ctx := map[string]any{"created_at": "2024-07-09T22:12:00Z"}
-		
+
 		b.ResetTimer()
 		b.ReportAllocs()
-		
-		for i := 0; i < b.N; i++ {
+
+		for range b.N {
 			_, err := engine.Evaluate(query, ctx)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
-	
+
 	b.Run("Large_Unix_Timestamp", func(b *testing.B) {
 		query := `timestamp dq 9223372036854775807`
 		ctx := map[string]any{"timestamp": int64(9223372036854775807)}
-		
+
 		b.ResetTimer()
 		b.ReportAllocs()
-		
-		for i := 0; i < b.N; i++ {
+
+		for range b.N {
 			_, err := engine.Evaluate(query, ctx)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
-	
+
 	b.Run("Deep_Nested_Properties", func(b *testing.B) {
 		query := `user.profile.settings.timestamps.created_at af session.events.latest.timestamp`
 		ctx := map[string]any{
@@ -260,11 +262,11 @@ func BenchmarkDateTimeStressCases(b *testing.B) {
 				},
 			},
 		}
-		
+
 		b.ResetTimer()
 		b.ReportAllocs()
-		
-		for i := 0; i < b.N; i++ {
+
+		for range b.N {
 			_, err := engine.Evaluate(query, ctx)
 			if err != nil {
 				b.Fatal(err)

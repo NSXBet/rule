@@ -37,6 +37,7 @@ func (e *Engine) AddQuery(rule string) error {
 	}
 
 	e.compiledRules.Store(rule, compiled)
+
 	return nil
 }
 
@@ -47,6 +48,7 @@ func (e *Engine) Evaluate(rule string, context map[string]any) (bool, error) {
 		if err := e.AddQuery(rule); err != nil {
 			return false, err
 		}
+
 		compiled, _ = e.compiledRules.Load(rule)
 	}
 
@@ -69,6 +71,7 @@ func (e *Engine) CompileRule(rule string) (*CompiledRule, error) {
 	}
 
 	e.compiledRules.Store(rule, compiled)
+
 	return compiled, nil
 }
 
@@ -82,8 +85,9 @@ func (e *Engine) ClearCache() {
 
 func hash(s string) uint64 {
 	h := uint64(5381)
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		h = ((h << 5) + h) + uint64(s[i])
 	}
+
 	return h
 }

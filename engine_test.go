@@ -55,6 +55,7 @@ func TestEngineRound1(t *testing.T) {
 					t.Errorf("query=%q, error=%v", tc.Query, err)
 					return
 				}
+
 				if got != tc.Result {
 					t.Errorf("query=%q, expected=%v, got=%v", tc.Query, tc.Result, got)
 				}
@@ -79,6 +80,7 @@ func TestEngineCompileOnce(t *testing.T) {
 		if err != nil {
 			t.Fatalf("evaluation failed: %v", err)
 		}
+
 		if !got {
 			t.Fatalf("expected true, got false")
 		}
@@ -96,6 +98,7 @@ func TestEngineJITCompilation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("JIT evaluation failed: %v", err)
 	}
+
 	if !got {
 		t.Fatalf("expected true, got false")
 	}
@@ -105,6 +108,7 @@ func TestEngineJITCompilation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cached evaluation failed: %v", err)
 	}
+
 	if !got {
 		t.Fatalf("expected true, got false")
 	}
@@ -278,6 +282,7 @@ func BenchmarkEngineZeroAlloc(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+
 		if !result {
 			b.Fatal("Expected true")
 		}

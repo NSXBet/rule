@@ -1,6 +1,9 @@
 package test
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 /* ---------- Edge Cases & Advanced Scenarios ---------- */
 
@@ -100,7 +103,7 @@ var NumericEdgeCaseTests = []TestCase{
 
 	// Negative numbers
 	{"negative_comparison", "x lt y", map[string]any{"x": -10, "y": -5}, true},
-	{"negative_zero", "x eq y", map[string]any{"x": -0.0, "y": 0.0}, true},
+	{"negative_zero", "x eq y", map[string]any{"x": math.Copysign(0, -1), "y": 0.0}, true},
 
 	// Mixed int/float comparisons
 	{"int_float_eq", "x eq y", map[string]any{"x": 42, "y": 42.0}, true},
@@ -176,19 +179,23 @@ var ExtremeValueTests = []TestCase{
 	{"long_string_contains", `x co "needle"`, map[string]any{
 		"x": strings.Repeat("a", 500) + "needle" + strings.Repeat("b", 500),
 	}, true},
-	
+
 	// Very deep nesting
-	{"extreme_deep_nesting", "level1.level2.level3.level4.level5.level6.level7.level8.level9.level10 eq 42", map[string]any{
-		"level1": map[string]any{
-			"level2": map[string]any{
-				"level3": map[string]any{
-					"level4": map[string]any{
-						"level5": map[string]any{
-							"level6": map[string]any{
-								"level7": map[string]any{
-									"level8": map[string]any{
-										"level9": map[string]any{
-											"level10": 42,
+	{
+		"extreme_deep_nesting",
+		"level1.level2.level3.level4.level5.level6.level7.level8.level9.level10 eq 42",
+		map[string]any{
+			"level1": map[string]any{
+				"level2": map[string]any{
+					"level3": map[string]any{
+						"level4": map[string]any{
+							"level5": map[string]any{
+								"level6": map[string]any{
+									"level7": map[string]any{
+										"level8": map[string]any{
+											"level9": map[string]any{
+												"level10": 42,
+											},
 										},
 									},
 								},
@@ -198,27 +205,28 @@ var ExtremeValueTests = []TestCase{
 				},
 			},
 		},
-	}, true},
-	
+		true,
+	},
+
 	// Large arrays
 	{"large_array_membership", "x in large_array", map[string]any{
 		"x": 999,
 		"large_array": func() []any {
 			arr := make([]any, 1000)
-			for i := 0; i < 1000; i++ {
+			for i := range 1000 {
 				arr[i] = i
 			}
 			return arr
 		}(),
 	}, true},
-	
+
 	// Unicode and special characters
 	{"unicode_strings", `emoji eq "🚀"`, map[string]any{"emoji": "🚀"}, true},
 	{"unicode_contains", `text co "🎉"`, map[string]any{"text": "Hello 🎉 World"}, true},
 	{"special_chars", `path eq "/path/to/file@domain.com"`, map[string]any{
 		"path": "/path/to/file@domain.com",
 	}, true},
-	
+
 	// Datetime operators - RFC 3339 format
 	{"datetime_equal_rfc3339", `created_at dq "2024-07-09T19:12:00-03:00"`, map[string]any{
 		"created_at": "2024-07-09T22:12:00Z", // Same time in UTC
@@ -238,7 +246,7 @@ var ExtremeValueTests = []TestCase{
 	{"datetime_after_or_equal_rfc3339", `created_at aq "2024-07-09T19:12:00-03:00"`, map[string]any{
 		"created_at": "2024-07-09T22:12:00Z", // Equal time
 	}, true},
-	
+
 	// Datetime operators - Unix timestamp format
 	{"datetime_equal_unix", `timestamp dq 1720558320`, map[string]any{
 		"timestamp": int64(1720558320),
@@ -258,7 +266,7 @@ var ExtremeValueTests = []TestCase{
 	{"datetime_after_or_equal_unix", `timestamp aq 1720558320`, map[string]any{
 		"timestamp": int64(1720558320),
 	}, true},
-	
+
 	// Mixed format comparisons (RFC3339 vs Unix)
 	{"datetime_mixed_rfc3339_vs_unix", `created_at af 1720558320`, map[string]any{
 		"created_at": "2024-07-09T22:12:01Z", // 1 second after the Unix timestamp
@@ -266,7 +274,7 @@ var ExtremeValueTests = []TestCase{
 	{"datetime_mixed_unix_vs_rfc3339", `timestamp be "2024-07-09T22:12:01Z"`, map[string]any{
 		"timestamp": int64(1720558320), // 1 second before the RFC3339 time
 	}, true},
-	
+
 	// Edge cases
 	{"datetime_false_before", `created_at be "2024-07-09T19:12:00-03:00"`, map[string]any{
 		"created_at": "2024-07-09T22:13:00Z", // After, so before should be false

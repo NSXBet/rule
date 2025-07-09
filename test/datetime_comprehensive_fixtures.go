@@ -1,6 +1,6 @@
 package test
 
-// DateTimeComprehensiveTests contains exhaustive datetime operator test cases
+// DateTimeComprehensiveTests contains exhaustive datetime operator test cases.
 var DateTimeComprehensiveTests = []TestCase{
 	// Property vs Property - Unix timestamp vs Unix timestamp
 	{"datetime_prop_unix_vs_unix_after", `start_time af end_time`, map[string]any{
@@ -167,21 +167,36 @@ var DateTimeComprehensiveTests = []TestCase{
 	}, false},
 
 	// Complex Scenarios with Logical Operators
-	{"datetime_complex_and_operation", `start_time af "2024-07-09T22:12:00Z" and end_time be "2024-07-09T22:15:00Z"`, map[string]any{
-		"start_time": "2024-07-09T22:12:01Z",
-		"end_time":   "2024-07-09T22:14:59Z",
-	}, true},
-	{"datetime_complex_or_operation", `created_at be "2024-07-09T22:12:00Z" or updated_at af "2024-07-09T22:15:00Z"`, map[string]any{
-		"created_at": "2024-07-09T22:13:00Z", // After (false)
-		"updated_at": "2024-07-09T22:15:01Z", // After (true)
-	}, true},
-	{"datetime_complex_nested_and_mixed", `session.start_time af user.created_at and session.end_time be 1720558400`, map[string]any{
-		"session": map[string]any{
+	{
+		"datetime_complex_and_operation",
+		`start_time af "2024-07-09T22:12:00Z" and end_time be "2024-07-09T22:15:00Z"`,
+		map[string]any{
 			"start_time": "2024-07-09T22:12:01Z",
-			"end_time":   int64(1720558399),
+			"end_time":   "2024-07-09T22:14:59Z",
 		},
-		"user": map[string]any{
-			"created_at": "2024-07-09T22:12:00Z",
+		true,
+	},
+	{
+		"datetime_complex_or_operation",
+		`created_at be "2024-07-09T22:12:00Z" or updated_at af "2024-07-09T22:15:00Z"`,
+		map[string]any{
+			"created_at": "2024-07-09T22:13:00Z", // After (false)
+			"updated_at": "2024-07-09T22:15:01Z", // After (true)
 		},
-	}, true},
+		true,
+	},
+	{
+		"datetime_complex_nested_and_mixed",
+		`session.start_time af user.created_at and session.end_time be 1720558400`,
+		map[string]any{
+			"session": map[string]any{
+				"start_time": "2024-07-09T22:12:01Z",
+				"end_time":   int64(1720558399),
+			},
+			"user": map[string]any{
+				"created_at": "2024-07-09T22:12:00Z",
+			},
+		},
+		true,
+	},
 }
