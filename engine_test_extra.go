@@ -23,7 +23,7 @@ func TestEngineClearCache(t *testing.T) {
 	engine.ClearCache()
 
 	// Should still work (will recompile)
-	result, err := engine.Evaluate("x eq 1", map[string]any{"x": 1})
+	result, err := engine.Evaluate("x eq 1", D{"x": 1})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestEngineEvaluateCompilationError(t *testing.T) {
 	engine := NewEngine()
 
 	// Try to evaluate invalid rule
-	_, err := engine.Evaluate("invalid syntax [[[", map[string]any{})
+	_, err := engine.Evaluate("invalid syntax [[[", D{})
 	if err == nil {
 		t.Error("Expected error for invalid rule syntax")
 	}
@@ -83,7 +83,7 @@ func TestEngineAddQueryAlreadyCompiled(t *testing.T) {
 	}
 
 	// Verify it still works
-	result, err := engine.Evaluate("x eq 1", map[string]any{"x": 1})
+	result, err := engine.Evaluate("x eq 1", D{"x": 1})
 	if err != nil {
 		t.Fatal(err)
 	}

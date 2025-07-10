@@ -13,47 +13,47 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 	testCases := []struct {
 		name  string
 		query string
-		ctx   map[string]any
+		ctx   D
 	}{
 		// RFC 3339 vs literal
 		{
 			"RFC3339_After_Literal",
 			`created_at af "2024-07-09T19:12:00-03:00"`,
-			map[string]any{"created_at": "2024-07-09T22:13:00Z"},
+			D{"created_at": "2024-07-09T22:13:00Z"},
 		},
 		{
 			"RFC3339_Before_Literal",
 			`created_at be "2024-07-09T19:12:00-03:00"`,
-			map[string]any{"created_at": "2024-07-09T22:11:00Z"},
+			D{"created_at": "2024-07-09T22:11:00Z"},
 		},
 		{
 			"RFC3339_Equal_Literal",
 			`created_at dq "2024-07-09T19:12:00-03:00"`,
-			map[string]any{"created_at": "2024-07-09T22:12:00Z"},
+			D{"created_at": "2024-07-09T22:12:00Z"},
 		},
 
 		// Unix timestamp vs literal
 		{
 			"Unix_After_Literal",
 			`timestamp af 1720558320`,
-			map[string]any{"timestamp": int64(1720558321)},
+			D{"timestamp": int64(1720558321)},
 		},
 		{
 			"Unix_Before_Literal",
 			`timestamp be 1720558320`,
-			map[string]any{"timestamp": int64(1720558319)},
+			D{"timestamp": int64(1720558319)},
 		},
 		{
 			"Unix_Equal_Literal",
 			`timestamp dq 1720558320`,
-			map[string]any{"timestamp": int64(1720558320)},
+			D{"timestamp": int64(1720558320)},
 		},
 
 		// Property vs Property
 		{
 			"Unix_Prop_vs_Prop",
 			`start_time af end_time`,
-			map[string]any{
+			D{
 				"start_time": int64(1720558321),
 				"end_time":   int64(1720558320),
 			},
@@ -61,7 +61,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 		{
 			"RFC3339_Prop_vs_Prop",
 			`created_at be updated_at`,
-			map[string]any{
+			D{
 				"created_at": "2024-07-09T22:11:59Z",
 				"updated_at": "2024-07-09T22:12:00Z",
 			},
@@ -69,7 +69,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 		{
 			"Mixed_Format_Prop_vs_Prop",
 			`created_at af timestamp`,
-			map[string]any{
+			D{
 				"created_at": "2024-07-09T22:12:01Z",
 				"timestamp":  int64(1720558320),
 			},
@@ -79,8 +79,8 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 		{
 			"Nested_RFC3339_vs_Literal",
 			`event.created_at af "2024-07-09T22:12:00Z"`,
-			map[string]any{
-				"event": map[string]any{
+			D{
+				"event": D{
 					"created_at": "2024-07-09T22:12:01Z",
 				},
 			},
@@ -88,8 +88,8 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 		{
 			"Nested_Unix_vs_Literal",
 			`session.timestamp be 1720558320`,
-			map[string]any{
-				"session": map[string]any{
+			D{
+				"session": D{
 					"timestamp": int64(1720558319),
 				},
 			},
@@ -97,11 +97,11 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 		{
 			"Nested_vs_Nested",
 			`session.start_time af user.created_at`,
-			map[string]any{
-				"session": map[string]any{
+			D{
+				"session": D{
 					"start_time": "2024-07-09T22:12:01Z",
 				},
-				"user": map[string]any{
+				"user": D{
 					"created_at": "2024-07-09T22:12:00Z",
 				},
 			},
@@ -111,7 +111,7 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 		{
 			"Complex_DateTime_And",
 			`start_time af "2024-07-09T22:12:00Z" and end_time be "2024-07-09T22:15:00Z"`,
-			map[string]any{
+			D{
 				"start_time": "2024-07-09T22:12:01Z",
 				"end_time":   "2024-07-09T22:14:59Z",
 			},
@@ -164,7 +164,7 @@ func BenchmarkDateTimeVsRegularOperators(b *testing.B) {
 
 	b.Run("DateTime_After", func(b *testing.B) {
 		query := `timestamp af 1720558320`
-		ctx := map[string]any{"timestamp": int64(1720558321)}
+		ctx := D{"timestamp": int64(1720558321)}
 
 		b.ResetTimer()
 		b.ReportAllocs()
@@ -179,7 +179,7 @@ func BenchmarkDateTimeVsRegularOperators(b *testing.B) {
 
 	b.Run("Regular_GreaterThan", func(b *testing.B) {
 		query := `timestamp gt 1720558320`
-		ctx := map[string]any{"timestamp": int64(1720558321)}
+		ctx := D{"timestamp": int64(1720558321)}
 
 		b.ResetTimer()
 		b.ReportAllocs()
@@ -194,7 +194,7 @@ func BenchmarkDateTimeVsRegularOperators(b *testing.B) {
 
 	b.Run("String_Contains", func(b *testing.B) {
 		query := `text co "test"`
-		ctx := map[string]any{"text": "this is a test string"}
+		ctx := D{"text": "this is a test string"}
 
 		b.ResetTimer()
 		b.ReportAllocs()
@@ -214,7 +214,7 @@ func BenchmarkDateTimeStressCases(b *testing.B) {
 
 	b.Run("RFC3339_Timezone_Conversion", func(b *testing.B) {
 		query := `created_at dq "2024-07-09T19:12:00-03:00"`
-		ctx := map[string]any{"created_at": "2024-07-09T22:12:00Z"}
+		ctx := D{"created_at": "2024-07-09T22:12:00Z"}
 
 		b.ResetTimer()
 		b.ReportAllocs()
@@ -229,7 +229,7 @@ func BenchmarkDateTimeStressCases(b *testing.B) {
 
 	b.Run("Large_Unix_Timestamp", func(b *testing.B) {
 		query := `timestamp dq 9223372036854775807`
-		ctx := map[string]any{"timestamp": int64(9223372036854775807)}
+		ctx := D{"timestamp": int64(9223372036854775807)}
 
 		b.ResetTimer()
 		b.ReportAllocs()
@@ -244,19 +244,19 @@ func BenchmarkDateTimeStressCases(b *testing.B) {
 
 	b.Run("Deep_Nested_Properties", func(b *testing.B) {
 		query := `user.profile.settings.timestamps.created_at af session.events.latest.timestamp`
-		ctx := map[string]any{
-			"user": map[string]any{
-				"profile": map[string]any{
-					"settings": map[string]any{
-						"timestamps": map[string]any{
+		ctx := D{
+			"user": D{
+				"profile": D{
+					"settings": D{
+						"timestamps": D{
 							"created_at": "2024-07-09T22:12:01Z",
 						},
 					},
 				},
 			},
-			"session": map[string]any{
-				"events": map[string]any{
-					"latest": map[string]any{
+			"session": D{
+				"events": D{
+					"latest": D{
 						"timestamp": int64(1720558320),
 					},
 				},

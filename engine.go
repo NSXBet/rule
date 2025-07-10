@@ -4,6 +4,10 @@ import (
 	"github.com/puzpuzpuz/xsync/v4"
 )
 
+// D is a type alias for map[string]any, providing a cleaner API for context data.
+// Usage: rule.D{"user": rule.D{"age": 25, "active": true}}.
+type D = map[string]any
+
 type CompiledRule struct {
 	AST  *ASTNode
 	Hash uint64
@@ -41,7 +45,7 @@ func (e *Engine) AddQuery(rule string) error {
 	return nil
 }
 
-func (e *Engine) Evaluate(rule string, context map[string]any) (bool, error) {
+func (e *Engine) Evaluate(rule string, context D) (bool, error) {
 	compiled, exists := e.compiledRules.Load(rule)
 	if !exists {
 		// Compile just-in-time
@@ -75,7 +79,7 @@ func (e *Engine) CompileRule(rule string) (*CompiledRule, error) {
 	return compiled, nil
 }
 
-func (e *Engine) EvaluateCompiled(compiled *CompiledRule, context map[string]any) (bool, error) {
+func (e *Engine) EvaluateCompiled(compiled *CompiledRule, context D) (bool, error) {
 	return e.evaluator.Evaluate(compiled.AST, context)
 }
 

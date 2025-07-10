@@ -24,7 +24,7 @@ type EvalResult struct {
 
 // Evaluator is an optimized evaluator that avoids allocations during evaluation.
 type Evaluator struct {
-	context map[string]any
+	context D
 	// Pre-allocated result to reuse
 	result EvalResult
 }
@@ -33,7 +33,7 @@ func NewEvaluator() *Evaluator {
 	return &Evaluator{}
 }
 
-func (e *Evaluator) Evaluate(node *ASTNode, context map[string]any) (bool, error) {
+func (e *Evaluator) Evaluate(node *ASTNode, context D) (bool, error) {
 	e.context = context
 
 	err := e.evaluateNode(node, &e.result)

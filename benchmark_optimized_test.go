@@ -7,7 +7,7 @@ import (
 // Benchmark optimized engine operations for zero allocations.
 func BenchmarkOptimizedEngineSimple(b *testing.B) {
 	engine := NewEngine()
-	ctx := map[string]any{"x": 10}
+	ctx := D{"x": 10}
 	rule := "x eq 10"
 
 	// Pre-compile rule
@@ -25,8 +25,8 @@ func BenchmarkOptimizedEngineSimple(b *testing.B) {
 
 func BenchmarkOptimizedEngineComplex(b *testing.B) {
 	engine := NewEngine()
-	ctx := map[string]any{
-		"user": map[string]any{
+	ctx := D{
+		"user": D{
 			"name": "John",
 			"age":  30,
 		},
@@ -49,7 +49,7 @@ func BenchmarkOptimizedEngineComplex(b *testing.B) {
 
 func BenchmarkOptimizedEngineStringOps(b *testing.B) {
 	engine := NewEngine()
-	ctx := map[string]any{"name": "John Doe", "email": "john@example.com"}
+	ctx := D{"name": "John Doe", "email": "john@example.com"}
 	rule := "name co \"John\" and email ew \".com\""
 
 	// Pre-compile rule
@@ -67,7 +67,7 @@ func BenchmarkOptimizedEngineStringOps(b *testing.B) {
 
 func BenchmarkOptimizedEngineInOperator(b *testing.B) {
 	engine := NewEngine()
-	ctx := map[string]any{
+	ctx := D{
 		"color":   "red",
 		"allowed": []any{"red", "green", "blue"},
 	}
@@ -88,10 +88,10 @@ func BenchmarkOptimizedEngineInOperator(b *testing.B) {
 
 func BenchmarkOptimizedEngineNestedProps(b *testing.B) {
 	engine := NewEngine()
-	ctx := map[string]any{
-		"user": map[string]any{
-			"profile": map[string]any{
-				"settings": map[string]any{
+	ctx := D{
+		"user": D{
+			"profile": D{
+				"settings": D{
 					"theme": "dark",
 				},
 			},
@@ -114,7 +114,7 @@ func BenchmarkOptimizedEngineNestedProps(b *testing.B) {
 
 func BenchmarkOptimizedStandalone(b *testing.B) {
 	engine := NewEngine()
-	ctx := map[string]any{"x": 10}
+	ctx := D{"x": 10}
 	rule := "x eq 10"
 
 	b.ResetTimer()
@@ -133,7 +133,7 @@ func BenchmarkZeroAllocEvaluatorDirect(b *testing.B) {
 	ast := NewBinaryOpNode(EQ,
 		NewIdentifierNode("x"),
 		NewNumberLiteralNode(10))
-	ctx := map[string]any{"x": 10}
+	ctx := D{"x": 10}
 
 	b.ResetTimer()
 

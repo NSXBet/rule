@@ -11,7 +11,7 @@ import (
 
 // Benchmark comparing our optimized engine vs nikunjy/rules vs text/template.
 func BenchmarkComparisonSimple(b *testing.B) {
-	ctx := map[string]any{"x": 10}
+	ctx := D{"x": 10}
 	rule := "x eq 10"
 	tmplText := "{{if eq .x 10}}true{{else}}false{{end}}"
 
@@ -64,8 +64,8 @@ func BenchmarkComparisonSimple(b *testing.B) {
 }
 
 func BenchmarkComparisonComplex(b *testing.B) {
-	ctx := map[string]any{
-		"user": map[string]any{
+	ctx := D{
+		"user": D{
 			"name": "John",
 			"age":  30,
 		},
@@ -126,7 +126,7 @@ func BenchmarkComparisonComplex(b *testing.B) {
 }
 
 func BenchmarkComparisonStringOps(b *testing.B) {
-	ctx := map[string]any{"name": "John Doe", "email": "john@example.com"}
+	ctx := D{"name": "John Doe", "email": "john@example.com"}
 	rule := `name co "John" and email ew ".com"`
 	tmplText := `{{if and (contains .name "John") (hasSuffix .email ".com")}}true{{else}}false{{end}}`
 
@@ -184,7 +184,7 @@ func BenchmarkComparisonStringOps(b *testing.B) {
 
 //nolint:gocognit // Benchmark function complexity is acceptable
 func BenchmarkComparisonInOperator(b *testing.B) {
-	ctx := map[string]any{
+	ctx := D{
 		"color": "red",
 	}
 	rule := `color in ["red", "green", "blue"]`
@@ -243,10 +243,10 @@ func BenchmarkComparisonInOperator(b *testing.B) {
 }
 
 func BenchmarkComparisonNestedProps(b *testing.B) {
-	ctx := map[string]any{
-		"user": map[string]any{
-			"profile": map[string]any{
-				"settings": map[string]any{
+	ctx := D{
+		"user": D{
+			"profile": D{
+				"settings": D{
 					"theme": "dark",
 				},
 			},
@@ -307,7 +307,7 @@ func BenchmarkComparisonNestedProps(b *testing.B) {
 //
 //nolint:gocognit // Benchmark function complexity is acceptable
 func BenchmarkComparisonManyQueries(b *testing.B) {
-	ctx := map[string]any{"x": 10, "y": 20, "z": 30}
+	ctx := D{"x": 10, "y": 20, "z": 30}
 	queries := []string{
 		"x eq 10",
 		"y gt 15",
@@ -391,7 +391,7 @@ func BenchmarkComparisonManyQueries(b *testing.B) {
 
 // Benchmark datetime operations - showcasing our unique advantage.
 func BenchmarkComparisonDateTimeOps(b *testing.B) {
-	ctx := map[string]any{
+	ctx := D{
 		"created_at": "2024-07-09T22:12:01Z",
 		"updated_at": "2024-07-09T22:12:00Z",
 		"timestamp":  int64(1720558320),

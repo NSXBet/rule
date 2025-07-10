@@ -45,8 +45,8 @@ func main() {
     engine := rule.NewEngine()
     
     // Define your context data
-    context := map[string]any{
-        "user": map[string]any{
+    context := rule.D{
+        "user": rule.D{
             "age":    25,
             "status": "active",
             "name":   "John Doe",
@@ -54,7 +54,7 @@ func main() {
     }
     
     // Evaluate a rule
-    result, err := engine.Evaluate("user.age gt 18 and user.status eq \"active\"", context)
+    result, err := engine.Evaluate(`user.age gt 18 and user.status eq "active"`, context)
     if err != nil {
         log.Fatal(err)
     }
@@ -80,11 +80,11 @@ Creates a new rule engine instance. Each engine maintains its own query cache fo
 engine := rule.NewEngine()
 ```
 
-#### `Evaluate(query string, context map[string]any) (bool, error)`
+#### `Evaluate(query string, context rule.D) (bool, error)`
 Evaluates a rule expression against the provided context. Returns `true`/`false` and any parsing/evaluation errors.
 
 ```go
-result, err := engine.Evaluate("price lt 100", map[string]any{"price": 50})
+result, err := engine.Evaluate(`price lt 100`, rule.D{"price": 50})
 // result: true, err: nil
 ```
 
@@ -93,13 +93,13 @@ Pre-compiles and caches a query for optimal performance. This is optional but re
 
 ```go
 // Pre-compile for better performance
-err := engine.AddQuery("user.role eq \"admin\"")
+err := engine.AddQuery(`user.role eq "admin"`)
 if err != nil {
     log.Fatal(err)
 }
 
 // Later evaluations will be faster
-result, _ := engine.Evaluate("user.role eq \"admin\"", context)
+result, _ := engine.Evaluate(`user.role eq "admin"`, context)
 ```
 
 ### Error Handling
@@ -118,12 +118,12 @@ if err != nil {
 
 ## 🎯 Context
 
-The context is a `map[string]any` that contains your data. The engine supports arbitrarily nested structures! 🏗️
+The context is a `rule.D` (alias for `map[string]any`) that contains your data. The engine supports arbitrarily nested structures! 🏗️
 
 ### Simple Values
 
 ```go
-context := map[string]any{
+context := rule.D{
     "price":    99.99,
     "quantity": 5,
     "active":   true,
@@ -131,10 +131,10 @@ context := map[string]any{
 }
 
 // Use directly in rules
-engine.Evaluate("price lt 100", context)      // true
-engine.Evaluate("quantity ge 3", context)     // true  
-engine.Evaluate("active eq true", context)    // true
-engine.Evaluate("name co \"Product\"", context) // true
+engine.Evaluate(`price lt 100`, context)      // true
+engine.Evaluate(`quantity ge 3`, context)     // true  
+engine.Evaluate(`active eq true`, context)    // true
+engine.Evaluate(`name co "Product"`, context) // true
 ```
 
 ### Nested Objects
@@ -142,19 +142,19 @@ engine.Evaluate("name co \"Product\"", context) // true
 Navigate deep object hierarchies with dot notation:
 
 ```go
-context := map[string]any{
-    "user": map[string]any{
-        "profile": map[string]any{
-            "settings": map[string]any{
+context := rule.D{
+    "user": rule.D{
+        "profile": rule.D{
+            "settings": rule.D{
                 "theme":         "dark",
                 "notifications": true,
             },
-            "preferences": map[string]any{
+            "preferences": rule.D{
                 "language": "en",
                 "timezone": "UTC",
             },
         },
-        "subscription": map[string]any{
+        "subscription": rule.D{
             "plan":   "premium",
             "active": true,
         },
@@ -162,9 +162,9 @@ context := map[string]any{
 }
 
 // Navigate nested structures easily
-engine.Evaluate("user.profile.settings.theme eq \"dark\"", context)              // true
-engine.Evaluate("user.subscription.plan eq \"premium\"", context)               // true  
-engine.Evaluate("user.profile.preferences.language eq \"en\"", context)         // true
+engine.Evaluate(`user.profile.settings.theme eq "dark"`, context)              // true
+engine.Evaluate(`user.subscription.plan eq "premium"`, context)               // true  
+engine.Evaluate(`user.profile.preferences.language eq "en"`, context)         // true
 ```
 
 ### Arrays and Membership
@@ -172,17 +172,17 @@ engine.Evaluate("user.profile.preferences.language eq \"en\"", context)         
 Check if values exist in arrays:
 
 ```go
-context := map[string]any{
-    "user": map[string]any{
+context := rule.D{
+    "user": rule.D{
         "roles": []any{"admin", "moderator"},
         "tags":  []any{"vip", "beta-tester"},
     },
     "colors": []any{"red", "green", "blue"},
 }
 
-engine.Evaluate("user.roles in [\"admin\", \"user\"]", context)     // true (admin matches)
-engine.Evaluate("\"red\" in colors", context)                      // true
-engine.Evaluate("user.tags in [\"vip\", \"premium\"]", context)    // true (vip matches)
+engine.Evaluate(`user.roles in ["admin", "user"]`, context)     // true (admin matches)
+engine.Evaluate(`"red" in colors`, context)                      // true
+engine.Evaluate(`user.tags in ["vip", "premium"]`, context)    // true (vip matches)
 ```
 
 ### Type Safety
@@ -190,16 +190,16 @@ engine.Evaluate("user.tags in [\"vip\", \"premium\"]", context)    // true (vip 
 The engine handles type mismatches gracefully - different types never compare as equal:
 
 ```go
-context := map[string]any{
+context := rule.D{
     "count":  42,
     "flag":   true,
     "text":   "42",
 }
 
-engine.Evaluate("count eq 42", context)     // true (int matches int)
-engine.Evaluate("count eq \"42\"", context) // false (int != string)
-engine.Evaluate("flag eq 1", context)       // false (bool != int)
-engine.Evaluate("text eq \"42\"", context)  // true (string matches string)
+engine.Evaluate(`count eq 42`, context)     // true (int matches int)
+engine.Evaluate(`count eq "42"`, context) // false (int != string)
+engine.Evaluate(`flag eq 1`, context)       // false (bool != int)
+engine.Evaluate(`text eq "42"`, context)  // true (string matches string)
 ```
 
 ---
@@ -218,12 +218,12 @@ Our rule language is intuitive and powerful! Here are all the supported operator
 | `!=` | Not equal to (alias) | `role != "guest"` | Same as `ne` |
 
 ```go
-context := map[string]any{"age": 25, "status": "active"}
+context := rule.D{"age": 25, "status": "active"}
 
-engine.Evaluate("age eq 25", context)               // true
-engine.Evaluate("status ne \"inactive\"", context)  // true
-engine.Evaluate("age == 25", context)               // true  
-engine.Evaluate("status != \"guest\"", context)     // true
+engine.Evaluate(`age eq 25`, context)               // true
+engine.Evaluate(`status ne "inactive"`, context)  // true
+engine.Evaluate(`age == 25`, context)               // true  
+engine.Evaluate(`status != "guest"`, context)     // true
 ```
 
 ### Relational Operators
@@ -236,12 +236,12 @@ engine.Evaluate("status != \"guest\"", context)     // true
 | `ge` | Greater than or equal | `rating ge 4.5` | `true` if rating ≥ 4.5 |
 
 ```go
-context := map[string]any{"price": 50, "score": 95, "age": 16, "rating": 4.8}
+context := rule.D{"price": 50, "score": 95, "age": 16, "rating": 4.8}
 
-engine.Evaluate("price lt 100", context)   // true
-engine.Evaluate("score gt 80", context)    // true
-engine.Evaluate("age le 18", context)      // true
-engine.Evaluate("rating ge 4.5", context) // true
+engine.Evaluate(`price lt 100`, context)   // true
+engine.Evaluate(`score gt 80`, context)    // true
+engine.Evaluate(`age le 18`, context)      // true
+engine.Evaluate(`rating ge 4.5`, context) // true
 ```
 
 ### String Operators
@@ -253,15 +253,15 @@ engine.Evaluate("rating ge 4.5", context) // true
 | `ew` | Ends with | `domain ew ".com"` | `true` if domain ends with ".com" |
 
 ```go
-context := map[string]any{
+context := rule.D{
     "name":   "John Doe",
     "email":  "admin@company.com", 
     "domain": "example.com",
 }
 
-engine.Evaluate("name co \"John\"", context)        // true
-engine.Evaluate("email sw \"admin\"", context)      // true  
-engine.Evaluate("domain ew \".com\"", context)      // true
+engine.Evaluate(`name co "John"`, context)        // true
+engine.Evaluate(`email sw "admin"`, context)      // true  
+engine.Evaluate(`domain ew ".com"`, context)      // true
 ```
 
 ### Membership Operator
@@ -271,14 +271,14 @@ engine.Evaluate("domain ew \".com\"", context)      // true
 | `in` | Member of array | `role in ["admin", "mod"]` | `true` if role is "admin" or "mod" |
 
 ```go
-context := map[string]any{
+context := rule.D{
     "role":   "admin",
     "colors": []any{"red", "green"},
 }
 
-engine.Evaluate("role in [\"admin\", \"user\"]", context)        // true
-engine.Evaluate("\"red\" in colors", context)                   // true
-engine.Evaluate("\"blue\" in [\"red\", \"green\", \"blue\"]", context) // true
+engine.Evaluate(`role in ["admin", "user"]`, context)        // true
+engine.Evaluate(`"red" in colors`, context)                   // true
+engine.Evaluate(`"blue" in ["red", "green", "blue"]`, context) // true
 ```
 
 ### Presence Operator
@@ -288,16 +288,16 @@ engine.Evaluate("\"blue\" in [\"red\", \"green\", \"blue\"]", context) // true
 | `pr` | Property present | `user.email pr` | `true` if user.email exists |
 
 ```go
-context := map[string]any{
-    "user": map[string]any{
+context := rule.D{
+    "user": rule.D{
         "name":  "John",
         "email": "john@example.com",
     },
 }
 
-engine.Evaluate("user.email pr", context)      // true (email exists)
-engine.Evaluate("user.phone pr", context)      // false (phone doesn't exist)
-engine.Evaluate("user.name pr", context)       // true (name exists)
+engine.Evaluate(`user.email pr`, context)      // true (email exists)
+engine.Evaluate(`user.phone pr`, context)      // false (phone doesn't exist)
+engine.Evaluate(`user.name pr`, context)       // true (name exists)
 ```
 
 ### Logical Operators
@@ -309,11 +309,11 @@ engine.Evaluate("user.name pr", context)       // true (name exists)
 | `not` | Logical NOT | `not (age lt 18)` | `true` if age is NOT less than 18 |
 
 ```go
-context := map[string]any{"age": 25, "status": "active", "role": "admin"}
+context := rule.D{"age": 25, "status": "active", "role": "admin"}
 
-engine.Evaluate("age gt 18 and status eq \"active\"", context)  // true
-engine.Evaluate("role eq \"admin\" or role eq \"mod\"", context) // true
-engine.Evaluate("not (age lt 18)", context)                     // true
+engine.Evaluate(`age gt 18 and status eq "active"`, context)  // true
+engine.Evaluate(`role eq "admin" or role eq "mod"`, context) // true
+engine.Evaluate(`not (age lt 18)`, context)                     // true
 ```
 
 ### DateTime Operators 📅
@@ -332,15 +332,15 @@ Perfect for time-based rules and scheduling logic:
 Supports both **RFC3339** strings and **Unix timestamps**:
 
 ```go
-context := map[string]any{
+context := rule.D{
     "created_at":   "2024-07-09T22:12:00Z",           // RFC3339
     "updated_at":   int64(1720558320),                // Unix timestamp  
     "publish_date": "2024-01-15T10:30:00-03:00",     // RFC3339 with timezone
 }
 
-engine.Evaluate("created_at af \"2024-01-01T00:00:00Z\"", context)     // true
-engine.Evaluate("updated_at be 1720558400", context)                   // true  
-engine.Evaluate("publish_date aq \"2024-01-01T00:00:00Z\"", context)   // true
+engine.Evaluate(`created_at af "2024-01-01T00:00:00Z"`, context)     // true
+engine.Evaluate(`updated_at be 1720558400`, context)                   // true  
+engine.Evaluate(`publish_date aq "2024-01-01T00:00:00Z"`, context)   // true
 ```
 
 ### Complex Expressions
@@ -348,14 +348,14 @@ engine.Evaluate("publish_date aq \"2024-01-01T00:00:00Z\"", context)   // true
 Combine operators with parentheses for complex business logic:
 
 ```go
-context := map[string]any{
-    "user": map[string]any{
+context := rule.D{
+    "user": rule.D{
         "age":      25,
         "status":   "active", 
         "role":     "premium",
         "country":  "US",
     },
-    "feature_flags": map[string]any{
+    "feature_flags": rule.D{
         "beta_enabled": true,
     },
 }
@@ -382,11 +382,11 @@ Every query gets automatically cached after first use:
 engine := rule.NewEngine()
 
 // First evaluation: parses + compiles + caches + evaluates
-result1, _ := engine.Evaluate("user.age gt 18", context) // ~100ns (includes parsing)
+result1, _ := engine.Evaluate(`user.age gt 18`, context) // ~100ns (includes parsing)
 
 // Subsequent evaluations: uses cached AST
-result2, _ := engine.Evaluate("user.age gt 18", context) // ~25ns (cached!)
-result3, _ := engine.Evaluate("user.age gt 18", context) // ~25ns (cached!)
+result2, _ := engine.Evaluate(`user.age gt 18`, context) // ~25ns (cached!)
+result3, _ := engine.Evaluate(`user.age gt 18`, context) // ~25ns (cached!)
 ```
 
 ### Pre-compilation with AddQuery
@@ -398,9 +398,9 @@ engine := rule.NewEngine()
 
 // Pre-compile critical business rules at startup
 criticalRules := []string{
-    "user.role eq \"admin\"",
-    "user.subscription.active eq true", 
-    "user.age ge 18 and user.status eq \"verified\"",
+    `user.role eq "admin"`,
+    `user.subscription.active eq true`, 
+    `user.age ge 18 and user.status eq "verified"`,
 }
 
 for _, rule := range criticalRules {

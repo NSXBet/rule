@@ -13,7 +13,7 @@ func TestEvaluatorBasicOperations(t *testing.T) {
 		NewIdentifierNode("x"),
 		NewNumberLiteralNode(10))
 
-	ctx := map[string]any{"x": 10}
+	ctx := D{"x": 10}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -48,7 +48,7 @@ func TestEvaluatorStringOperations(t *testing.T) {
 		NewIdentifierNode("name"),
 		NewStringLiteralNode("John"))
 
-	ctx := map[string]any{"name": "John Doe"}
+	ctx := D{"name": "John Doe"}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -100,7 +100,7 @@ func TestEvaluatorInOperation(t *testing.T) {
 			{Type: ValueString, StrValue: "blue"},
 		}))
 
-	ctx := map[string]any{"color": "red"}
+	ctx := D{"color": "red"}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -131,7 +131,7 @@ func TestEvaluatorPresenceOperation(t *testing.T) {
 	ast := NewUnaryOpNode(PR, NewIdentifierNode("name"))
 
 	// Test with existing attribute
-	ctx := map[string]any{"name": "John"}
+	ctx := D{"name": "John"}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -143,7 +143,7 @@ func TestEvaluatorPresenceOperation(t *testing.T) {
 	}
 
 	// Test with missing attribute
-	ctx = map[string]any{}
+	ctx = D{}
 
 	result, err = evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -168,7 +168,7 @@ func TestEvaluatorLogicalOperations(t *testing.T) {
 			NewIdentifierNode("y"),
 			NewNumberLiteralNode(5)))
 
-	ctx := map[string]any{"x": 10, "y": 8}
+	ctx := D{"x": 10, "y": 8}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -208,7 +208,7 @@ func TestEvaluatorNotOperation(t *testing.T) {
 			NewIdentifierNode("x"),
 			NewNumberLiteralNode(10)))
 
-	ctx := map[string]any{"x": 5}
+	ctx := D{"x": 5}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -228,8 +228,8 @@ func TestEvaluatorNestedAttributes(t *testing.T) {
 		NewPropertyNode([]string{"user", "name"}),
 		NewStringLiteralNode("John"))
 
-	ctx := map[string]any{
-		"user": map[string]any{
+	ctx := D{
+		"user": D{
 			"name": "John",
 			"age":  30,
 		},
@@ -254,7 +254,7 @@ func TestEvaluatorLargeNumbers(t *testing.T) {
 		NewIdentifierNode("big"),
 		NewStringLiteralNode("9223372036854775807"))
 
-	ctx := map[string]any{"big": "9223372036854775807"}
+	ctx := D{"big": "9223372036854775807"}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -270,7 +270,7 @@ func TestEvaluatorLargeNumbers(t *testing.T) {
 		NewIdentifierNode("big"),
 		NewStringLiteralNode("9223372036854775806"))
 
-	ctx = map[string]any{"big": "9223372036854775807"}
+	ctx = D{"big": "9223372036854775807"}
 
 	result, err = evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -293,7 +293,7 @@ func TestEvaluatorBooleanLiterals(t *testing.T) {
 		NewIdentifierNode("active"),
 		NewBooleanLiteralNode(true))
 
-	ctx := map[string]any{"active": true}
+	ctx := D{"active": true}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -332,7 +332,7 @@ func TestEvaluatorRelationalOperations(t *testing.T) {
 			NewIdentifierNode("x"),
 			NewNumberLiteralNode(test.right))
 
-		ctx := map[string]any{"x": test.left}
+		ctx := D{"x": test.left}
 
 		result, err := evaluator.Evaluate(ast, ctx)
 		if err != nil {
@@ -354,7 +354,7 @@ func TestEvaluatorTypeConversions(t *testing.T) {
 		NewIdentifierNode("x"),
 		NewNumberLiteralNode(10))
 
-	ctx := map[string]any{"x": "10"}
+	ctx := D{"x": "10"}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -375,7 +375,7 @@ func TestEvaluatorEqualsAliases(t *testing.T) {
 		NewIdentifierNode("x"),
 		NewNumberLiteralNode(10))
 
-	ctx := map[string]any{"x": 10}
+	ctx := D{"x": 10}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
@@ -410,7 +410,7 @@ func TestEvaluatorErrorConditions(t *testing.T) {
 		NewIdentifierNode("missing"),
 		NewNumberLiteralNode(10))
 
-	result, err := evaluator.Evaluate(ast, map[string]any{})
+	result, err := evaluator.Evaluate(ast, D{})
 	if err != nil {
 		t.Errorf("Expected no error for missing attribute, got %v", err)
 	}
@@ -424,7 +424,7 @@ func TestEvaluatorErrorConditions(t *testing.T) {
 		NewPropertyNode([]string{"missing", "nested"}),
 		NewStringLiteralNode("test"))
 
-	result, err = evaluator.Evaluate(ast, map[string]any{})
+	result, err = evaluator.Evaluate(ast, D{})
 	if err != nil {
 		// This is expected for invalid nested attributes
 		t.Logf("Got expected error for invalid nested attribute: %v", err)
@@ -438,7 +438,7 @@ func TestEvaluatorErrorConditions(t *testing.T) {
 		NewPropertyNode([]string{"x", "y"}),
 		NewStringLiteralNode("test"))
 
-	result, err = evaluator.Evaluate(ast, map[string]any{"x": "not a map"})
+	result, err = evaluator.Evaluate(ast, D{"x": "not a map"})
 	if err != nil {
 		// This is expected for property access on non-map
 		t.Logf("Got expected error for property access on non-map: %v", err)
@@ -465,7 +465,7 @@ func TestEvaluatorComplexNested(t *testing.T) {
 			NewIdentifierNode("z"),
 			NewStringLiteralNode("test")))
 
-	ctx := map[string]any{"x": 5, "y": 3, "z": "testing"}
+	ctx := D{"x": 5, "y": 3, "z": "testing"}
 
 	result, err := evaluator.Evaluate(ast, ctx)
 	if err != nil {
