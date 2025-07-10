@@ -109,7 +109,7 @@ func FuzzStringOperations(f *testing.F) {
 			"str1 sw str2",
 			"str1 ew str2",
 			"str2 co str1",
-			"str2 sw str1", 
+			"str2 sw str1",
 			"str2 ew str1",
 		}
 
@@ -129,7 +129,7 @@ func FuzzNumericOperations(f *testing.F) {
 	f.Add(int64(0), float64(0))
 	f.Add(int64(1), float64(1))
 	f.Add(int64(-1), float64(-1))
-	f.Add(int64(9223372036854775807), float64(9223372036854775807)) // max int64
+	f.Add(int64(9223372036854775807), float64(9223372036854775807))   // max int64
 	f.Add(int64(-9223372036854775808), float64(-9223372036854775808)) // min int64
 	f.Add(int64(42), float64(42.0))
 	f.Add(int64(100), float64(99.999999))
@@ -153,7 +153,7 @@ func FuzzNumericOperations(f *testing.F) {
 			"intVal eq floatVal",
 			"intVal ne floatVal",
 			"intVal lt floatVal",
-			"intVal gt floatVal", 
+			"intVal gt floatVal",
 			"intVal le floatVal",
 			"intVal ge floatVal",
 			"floatVal eq intVal",
@@ -203,7 +203,7 @@ func FuzzDateTimeOperations(f *testing.F) {
 		// Test all datetime operations
 		dateTimeOps := []string{
 			"date1 dq date2",
-			"date1 dn date2", 
+			"date1 dn date2",
 			"date1 be date2",
 			"date1 bq date2",
 			"date1 af date2",
@@ -229,14 +229,14 @@ func FuzzPropertyAccess(f *testing.F) {
 	f.Add("user")
 	f.Add("")
 	f.Add("nonexistent.property")
-	f.Add("user..name") // double dots
-	f.Add("user.") // trailing dot
-	f.Add(".user") // leading dot
+	f.Add("user..name")       // double dots
+	f.Add("user.")            // trailing dot
+	f.Add(".user")            // leading dot
 	f.Add("user.name.length") // accessing property on non-object
 	f.Add("very_long_property_name_with_many_characters")
 
 	engine := NewEngine()
-	
+
 	f.Fuzz(func(t *testing.T, propertyPath string) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -429,7 +429,7 @@ func FuzzMixedTypeComparisons(f *testing.F) {
 	f.Fuzz(func(t *testing.T, strVal string, intVal int64, floatVal float64, boolVal bool) {
 		defer func() {
 			if r := recover(); r != nil {
-				t.Errorf("Mixed type comparison panicked with inputs %q, %d, %f, %t: %v", 
+				t.Errorf("Mixed type comparison panicked with inputs %q, %d, %f, %t: %v",
 					strVal, intVal, floatVal, boolVal, r)
 			}
 		}()
