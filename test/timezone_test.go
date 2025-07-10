@@ -109,14 +109,17 @@ func containsDatetimeOperator(rule string) bool {
 				if i > 0 && rule[i-1] != ' ' {
 					continue
 				}
+
 				if i+len(op) < len(rule) && rule[i+len(op)] != ' ' {
 					continue
 				}
+
 				if rule[i:i+len(op)] == op {
 					return true
 				}
 			}
 		}
 	}
+
 	return false
 }

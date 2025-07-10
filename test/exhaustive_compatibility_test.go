@@ -171,9 +171,11 @@ func TestExhaustiveCompatibility(t *testing.T) {
 					reason:       "Both should convert time.Time to same string format",
 				},
 				{
-					name:         "time.Time with nanoseconds format",
-					rule:         `timestamp co "123456"`,
-					context:      map[string]interface{}{"timestamp": time.Date(2024, 7, 10, 2, 30, 0, 123456789, time.UTC)},
+					name: "time.Time with nanoseconds format",
+					rule: `timestamp co "123456"`,
+					context: map[string]interface{}{
+						"timestamp": time.Date(2024, 7, 10, 2, 30, 0, 123456789, time.UTC),
+					},
 					ourContext:   rule.D{"timestamp": time.Date(2024, 7, 10, 2, 30, 0, 123456789, time.UTC)},
 					expectOurs:   true,
 					expectRules:  true,
@@ -196,9 +198,12 @@ func TestExhaustiveCompatibility(t *testing.T) {
 					reason:       "dq operator is our extension, not in nikunjy/rules",
 				},
 				{
-					name:         "datetime before operator",
-					rule:         `start_time be end_time`,
-					context:      map[string]interface{}{"start_time": "2024-07-10T01:00:00Z", "end_time": "2024-07-10T02:00:00Z"},
+					name: "datetime before operator",
+					rule: `start_time be end_time`,
+					context: map[string]interface{}{
+						"start_time": "2024-07-10T01:00:00Z",
+						"end_time":   "2024-07-10T02:00:00Z",
+					},
 					ourContext:   rule.D{"start_time": "2024-07-10T01:00:00Z", "end_time": "2024-07-10T02:00:00Z"},
 					expectOurs:   true,
 					expectRules:  false, // should error
@@ -304,9 +309,11 @@ func TestExhaustiveCompatibility(t *testing.T) {
 				if resultsMatch {
 					t.Logf("⚠️  UNEXPECTED COMPATIBILITY")
 					t.Logf("   Expected incompatible because: %s", test.reason)
+
 					unexpectedCompatibilities++
 				} else {
 					t.Logf("✅ EXPECTED INCOMPATIBILITY: %s", test.reason)
+
 					expectedIncompatibilities++
 					actualIncompatibilities++
 				}
@@ -315,6 +322,7 @@ func TestExhaustiveCompatibility(t *testing.T) {
 					t.Logf("✅ COMPATIBLE as expected")
 				} else {
 					t.Logf("❌ UNEXPECTED INCOMPATIBILITY")
+
 					unexpectedIncompatibilities++
 					actualIncompatibilities++
 				}
@@ -360,12 +368,4 @@ type CompatibilityCase struct {
 	expectRules  bool
 	incompatible bool
 	reason       string
-}
-
-func repeatString(s string, n int) string {
-	result := ""
-	for i := 0; i < n; i++ {
-		result += s
-	}
-	return result
 }

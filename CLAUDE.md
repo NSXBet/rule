@@ -119,3 +119,54 @@ All functionality is validated through the comprehensive test suite in `test/fix
 - **Package Isolation**: Any custom test scripts MUST be placed in their own separate folder (not in the root directory) to avoid conflicts with the main `rule` package
 - **Main Tests**: Use the existing `test/` directory structure for all official functionality tests
 - **Debug Scripts**: For debugging, create a separate folder (e.g., `debug/`) with a `main` function and run with `go run ./debug/`. Do NOT create separate modules for each test function.
+
+### Scripts Directory
+For utility scripts and testing tools that need to be preserved:
+
+```bash
+# Create a script directory structure
+mkdir -p ./scripts/<script-name>/
+# Create main.go with package main
+# Run with: go run ./scripts/<script-name>
+```
+
+**Guidelines:**
+- Use `scripts/<descriptive-name>/main.go` for any utility scripts
+- Each script should be in its own subdirectory with `package main`
+- Scripts should be self-contained and not interfere with the main package
+- Run scripts with `go run ./scripts/<script-name>` 
+- Clean up scripts when no longer needed to avoid linter warnings
+
+### Examples and Documentation
+
+**Examples follow Go conventions** and should be added to `example_test.go`:
+
+```go
+// Example demonstrates basic rule engine usage.
+func Example() {
+    engine := rule.NewEngine()
+    // ... example code
+    // Output: expected output
+}
+
+// Example_specificFeature demonstrates a specific feature.
+func Example_specificFeature() {
+    // ... example code
+    // Output: expected output
+}
+
+// ExampleEngine_Evaluate demonstrates a method.
+func ExampleEngine_Evaluate() {
+    // ... example code  
+    // Output: expected output
+}
+```
+
+**Adding New Examples:**
+1. Add `Example` functions to `example_test.go` following Go naming conventions
+2. Include expected output with `// Output:` comments for verification
+3. Test examples with `go test -run Example -v` or `make examples`
+4. Examples are automatically included in `go doc` and served by `godoc`
+5. Examples should be concise, self-contained, and demonstrate real-world usage
+
+**Never** create separate example packages or directories - use Go's built-in example system.

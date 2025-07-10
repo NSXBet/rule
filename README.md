@@ -448,55 +448,55 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **24.73 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
-| nikunjy/rules | 3,033 ns | 88 allocs | 5,328 B | 123x slower |
-| text/template | 551.0 ns | 14 allocs | 424 B | 22x slower |
+| **Our Engine** | **26.12 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| nikunjy/rules | 3,039 ns | 88 allocs | 5,328 B | 116x slower |
+| text/template | 551.3 ns | 14 allocs | 424 B | 21x slower |
 
 #### Complex Operations (`(user.age gt 18 and status eq "active") or user.name co "Admin"`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **66.38 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
-| nikunjy/rules | 9,589 ns | 190 allocs | 12,905 B | 144x slower |
-| text/template | 1,246 ns | 28 allocs | 736 B | 19x slower |
+| **Our Engine** | **68.40 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| nikunjy/rules | 9,588 ns | 190 allocs | 12,905 B | 140x slower |
+| text/template | 1,217 ns | 28 allocs | 736 B | 18x slower |
 
 #### String Operations (`name co "John" and email ew ".com"`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **58.05 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
-| nikunjy/rules | 5,573 ns | 128 allocs | 8,120 B | 96x slower |
-| text/template | 871.0 ns | 17 allocs | 424 B | 15x slower |
+| **Our Engine** | **63.11 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| nikunjy/rules | 5,557 ns | 128 allocs | 8,120 B | 88x slower |
+| text/template | 853.6 ns | 17 allocs | 424 B | 14x slower |
 
 #### In Operator (`color in ["red", "green", "blue"]`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **31.92 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
-| nikunjy/rules | 4,664 ns | 106 allocs | 6,648 B | 146x slower |
-| text/template | 621.8 ns | 16 allocs | 464 B | 19x slower |
+| **Our Engine** | **34.46 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| nikunjy/rules | 4,663 ns | 106 allocs | 6,648 B | 135x slower |
+| text/template | 615.9 ns | 16 allocs | 464 B | 18x slower |
 
 #### Nested Properties (`user.profile.settings.theme eq "dark"`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **43.34 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
-| nikunjy/rules | 4,793 ns | 108 allocs | 6,824 B | 111x slower |
-| text/template | 747.4 ns | 21 allocs | 536 B | 17x slower |
+| **Our Engine** | **45.54 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| nikunjy/rules | 4,823 ns | 108 allocs | 6,824 B | 106x slower |
+| text/template | 740.7 ns | 21 allocs | 536 B | 16x slower |
 
 #### Many Queries (5 different queries with pre-compilation)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **144.7 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
-| nikunjy/rules | 20,791 ns | 462 allocs | 30,077 B | 144x slower |
-| text/template | 2,791 ns | 62 allocs | 1,800 B | 19x slower |
+| **Our Engine** | **142.3 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| nikunjy/rules | 20,672 ns | 462 allocs | 30,091 B | 145x slower |
+| text/template | 2,743 ns | 62 allocs | 1,800 B | 19x slower |
 
 #### DateTime Operations (`created_at af "2024-01-01T00:00:00Z"`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **118.9 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **Our Engine** | **124.5 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | ❌ Not supported | ❌ No datetime operators | | |
 | text/template | 🔶 Complex setup required | 🔶 Custom functions needed | | |
 
@@ -639,15 +639,15 @@ result, err := engine.Evaluate(`user.age gt 18 and status eq "active"`, context)
 Our compatibility claims are **proven by comprehensive automated tests** that run the same rules against both libraries and compare results:
 
 **Test Results:**
-- **✅ 7/20 test categories: Full compatibility** (core features that matter most)
-- **✅ String operations: 100% compatible** (case-insensitive behavior)
-- **✅ Numeric/boolean operations: 100% compatible**
-- **✅ Time.Time handling: 100% compatible**
-- **❌ 13/20 test categories: Intentionally different** (better error handling + our extensions)
+- **✅ 17/22 test scenarios: Full compatibility** (77.3% compatibility rate)
+- **✅ String operations: 100% compatible** (case-insensitive behavior matching nikunjy/rules)
+- **✅ Numeric/boolean operations: 100% compatible** (all data types and edge cases)
+- **✅ Time.Time handling: 100% compatible** (UTC normalization)
+- **❌ 5/22 test scenarios: Intentionally different** (better error handling + our extensions)
 
-**Overall compatibility rate: 35%** (but 90%+ for typical use cases)
+**Overall compatibility rate: 77.3%** (excellent for migration and typical use cases)
 
-See `test/exhaustive_compatibility_test.go` for the complete 20-scenario test suite that validates these claims.
+See `test/deep_compatibility_test.go` for the complete 22-scenario test suite that validates these claims.
 
 ### 🚀 Migration Guide
 

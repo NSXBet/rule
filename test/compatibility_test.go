@@ -8,7 +8,7 @@ import (
 	ruleslib "github.com/nikunjy/rules"
 )
 
-// CompatibilityTest defines a test case for comparing our library with nikunjy/rules
+// CompatibilityTest defines a test case for comparing our library with nikunjy/rules.
 type CompatibilityTest struct {
 	Name     string
 	Rule     string
@@ -17,7 +17,7 @@ type CompatibilityTest struct {
 	Notes    string
 }
 
-// runCompatibilityTest runs a single compatibility test against both libraries
+// runCompatibilityTest runs a single compatibility test against both libraries.
 func runCompatibilityTest(t *testing.T, test CompatibilityTest) bool {
 	t.Helper()
 
@@ -36,18 +36,22 @@ func runCompatibilityTest(t *testing.T, test CompatibilityTest) bool {
 
 	// Compare results
 	success := true
-	if ourErr != nil && rulesErr != nil {
+
+	switch {
+	case ourErr != nil && rulesErr != nil:
 		// Both errored - consider compatible if both fail
 		t.Logf("✅ %s: Both libraries errored (compatible)", test.Name)
-	} else if ourErr != nil || rulesErr != nil {
+	case ourErr != nil || rulesErr != nil:
 		// Only one errored
 		t.Errorf("❌ %s: Error mismatch - Our: %v, Rules: %v", test.Name, ourErr, rulesErr)
+
 		success = false
-	} else if ourResult != rulesResult {
+	case ourResult != rulesResult:
 		// Different results
 		t.Errorf("❌ %s: Result mismatch - Our: %v, Rules: %v", test.Name, ourResult, rulesResult)
+
 		success = false
-	} else {
+	default:
 		// Same results
 		t.Logf("✅ %s: Compatible - both returned %v", test.Name, ourResult)
 	}
@@ -55,6 +59,7 @@ func runCompatibilityTest(t *testing.T, test CompatibilityTest) bool {
 	// Also check against expected value
 	if ourErr == nil && ourResult != test.Expected {
 		t.Errorf("⚠️  %s: Our result %v doesn't match expected %v", test.Name, ourResult, test.Expected)
+
 		success = false
 	}
 

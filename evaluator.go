@@ -868,24 +868,27 @@ func (e *Evaluator) compareDateTimes(
 // Zero-allocation case-insensitive string comparison functions
 // These maintain compatibility with nikunjy/rules while avoiding allocations
 
-// equalIgnoreCase compares two strings case-insensitively without allocations
+// equalIgnoreCase compares two strings case-insensitively without allocations.
 func (e *Evaluator) equalIgnoreCase(a, b string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := 0; i < len(a); i++ {
+
+	for i := range len(a) {
 		if toLowerByte(a[i]) != toLowerByte(b[i]) {
 			return false
 		}
 	}
+
 	return true
 }
 
-// containsIgnoreCase checks if a contains b case-insensitively without allocations
+// containsIgnoreCase checks if a contains b case-insensitively without allocations.
 func (e *Evaluator) containsIgnoreCase(a, b string) bool {
 	if len(b) == 0 {
 		return true
 	}
+
 	if len(b) > len(a) {
 		return false
 	}
@@ -895,43 +898,51 @@ func (e *Evaluator) containsIgnoreCase(a, b string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
-// hasPrefixIgnoreCase checks if a starts with b case-insensitively without allocations
+// hasPrefixIgnoreCase checks if a starts with b case-insensitively without allocations.
 func (e *Evaluator) hasPrefixIgnoreCase(a, b string) bool {
 	if len(b) > len(a) {
 		return false
 	}
+
 	return e.equalIgnoreCaseSubstring(a, 0, b)
 }
 
-// hasSuffixIgnoreCase checks if a ends with b case-insensitively without allocations
+// hasSuffixIgnoreCase checks if a ends with b case-insensitively without allocations.
 func (e *Evaluator) hasSuffixIgnoreCase(a, b string) bool {
 	if len(b) > len(a) {
 		return false
 	}
+
 	return e.equalIgnoreCaseSubstring(a, len(a)-len(b), b)
 }
 
-// equalIgnoreCaseSubstring compares substring of a starting at offset with b
+// equalIgnoreCaseSubstring compares substring of a starting at offset with b.
 func (e *Evaluator) equalIgnoreCaseSubstring(a string, offset int, b string) bool {
 	if offset+len(b) > len(a) {
 		return false
 	}
-	for i := 0; i < len(b); i++ {
+
+	for i := range len(b) {
 		if toLowerByte(a[offset+i]) != toLowerByte(b[i]) {
 			return false
 		}
 	}
+
 	return true
 }
 
+const asciiLowerOffset = 32 // Offset between ASCII uppercase and lowercase
+
 // toLowerByte converts ASCII uppercase to lowercase without allocation
-// Only handles ASCII characters (A-Z), non-ASCII bytes are returned unchanged
+// Only handles ASCII characters (A-Z), non-ASCII bytes are returned unchanged.
 func toLowerByte(b byte) byte {
 	if b >= 'A' && b <= 'Z' {
-		return b + 32
+		return b + asciiLowerOffset
 	}
+
 	return b
 }

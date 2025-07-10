@@ -50,6 +50,10 @@ test-round1: ## Run round 1 tests specifically
 	@echo "Running round 1 tests..."
 	go test ./test -run TestRulesRound1
 
+examples: ## Run all example tests
+	@echo "Running example tests..."
+	go test -run Example -v
+
 # Benchmarking
 bench: ## Run all benchmarks
 	@echo "Running benchmarks..."
