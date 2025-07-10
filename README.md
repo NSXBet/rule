@@ -316,6 +316,104 @@ engine.Evaluate(`role eq "admin" or role eq "mod"`, context) // true
 engine.Evaluate(`not (age lt 18)`, context)                     // true
 ```
 
+### Property-to-Property Comparisons 🔗
+
+Compare properties directly without using literal values - a powerful feature for dynamic rules:
+
+| Comparison Type | Example | Description |
+|----------------|---------|-------------|
+| **Simple to Simple** | `age eq min_age` | Compare two top-level properties |
+| **Nested to Simple** | `user.age gt minimum` | Compare nested property to top-level property |
+| **Simple to Nested** | `score le limits.maximum` | Compare top-level property to nested property |
+| **Nested to Nested** | `user.age eq limits.minimum` | Compare two single-level nested properties |
+| **Deep Nested Comparison** | `config.settings.max eq system.validation.rules.limits.ceiling` | Compare 2-level vs 4-level nested properties |
+
+```go
+context := rule.D{
+    // Top-level properties  
+    "age":        25,
+    "min_age":    18,
+    "score":      1200,
+    "minimum":    21,
+    
+    // Single-level nested
+    "user": rule.D{
+        "age": 30,
+    },
+    "limits": rule.D{
+        "maximum": 1500,
+        "minimum": 18,
+    },
+    
+    // Multi-level nested (2 levels)
+    "config": rule.D{
+        "settings": rule.D{
+            "max": 2000,
+        },
+    },
+    
+    // Deep nested (4 levels)
+    "system": rule.D{
+        "validation": rule.D{
+            "rules": rule.D{
+                "limits": rule.D{
+                    "ceiling": 2000,
+                },
+            },
+        },
+    },
+}
+
+// 1. Simple to Simple: Compare two top-level properties
+engine.Evaluate(`age gt min_age`, context)                     // true (25 > 18)
+
+// 2. Nested to Simple: Compare nested property to top-level  
+engine.Evaluate(`user.age gt minimum`, context)               // true (30 > 21)
+
+// 3. Simple to Nested: Compare top-level to nested property
+engine.Evaluate(`score le limits.maximum`, context)           // true (1200 <= 1500)
+
+// 4. Nested to Nested: Compare two single-level nested properties
+engine.Evaluate(`user.age gt limits.minimum`, context)        // true (30 > 18)
+
+// 5. Deep Nested: Compare 2-level vs 4-level nested properties  
+engine.Evaluate(`config.settings.max eq system.validation.rules.limits.ceiling`, context) // true (2000 == 2000)
+```
+
+**Advanced Property Comparison Examples:**
+
+```go
+// Comparing timestamps between properties
+context := rule.D{
+    "event": rule.D{
+        "start_time": "2024-07-10T10:00:00Z",
+        "end_time":   "2024-07-10T12:00:00Z",
+    },
+    "session": rule.D{
+        "created_at": "2024-07-10T09:30:00Z",
+        "expires_at": "2024-07-10T11:30:00Z",
+    },
+}
+
+// DateTime property-to-property comparisons
+engine.Evaluate(`event.start_time af session.created_at`, context)  // true
+engine.Evaluate(`session.expires_at be event.end_time`, context)    // true
+
+// String property-to-property comparisons  
+context := rule.D{
+    "user":   rule.D{"name": "john_doe"},
+    "profile": rule.D{"username": "john_doe"},
+}
+
+engine.Evaluate(`user.name eq profile.username`, context)           // true
+```
+
+**Benefits of Property-to-Property Comparisons:**
+- ✅ **Dynamic Rules**: No need to hardcode values in rules
+- ✅ **Flexible Logic**: Compare any properties regardless of nesting depth
+- ✅ **Type Safe**: All comparison operators work (numeric, string, datetime, etc.)
+- ✅ **Performance**: Zero allocations, same speed as literal comparisons
+
 ### DateTime Operators 📅
 
 Perfect for time-based rules and scheduling logic:
@@ -342,6 +440,47 @@ engine.Evaluate(`created_at af "2024-01-01T00:00:00Z"`, context)     // true
 engine.Evaluate(`updated_at be 1720558400`, context)                   // true  
 engine.Evaluate(`publish_date aq "2024-01-01T00:00:00Z"`, context)   // true
 ```
+
+#### 🕐 DateTime vs Regular Operators
+
+**Key Difference**: DateTime operators (`dq`, `dn`, `be`, `bq`, `af`, `aq`) vs regular operators (`eq`, `ne`, `lt`, `gt`, `le`, `ge`)
+
+| Aspect | Regular Operators | DateTime Operators |
+|--------|------------------|-------------------|
+| **Comparison Method** | Lexicographic/numeric | **UTC-normalized datetime** |
+| **Timezone Handling** | No timezone processing | **Automatic UTC conversion** |
+| **Format Support** | Raw string/number values | **RFC3339, Unix timestamps, time.Time** |
+| **Type Safety** | Generic value comparison | **Specialized datetime parsing** |
+
+**Example demonstrating the difference:**
+
+```go
+context := rule.D{
+    "timestamp1": "2024-01-01T15:00:00-05:00",  // EST timezone
+    "timestamp2": "2024-01-01T20:00:00Z",       // UTC timezone (same time!)
+}
+
+// Regular operators: lexicographic string comparison
+engine.Evaluate(`timestamp1 eq timestamp2`, context)  // false (strings differ)
+engine.Evaluate(`timestamp1 lt timestamp2`, context)  // true ("15" < "20" lexicographically)
+
+// DateTime operators: UTC-normalized datetime comparison  
+engine.Evaluate(`timestamp1 dq timestamp2`, context)  // true (same UTC time!)
+engine.Evaluate(`timestamp1 be timestamp2`, context)  // false (same time, not before)
+```
+
+**When to use each:**
+
+✅ **Use DateTime Operators (`be`, `af`, etc.) when:**
+- Comparing timestamps across timezones
+- Working with mixed datetime formats (RFC3339 + Unix timestamps)
+- Need semantic time comparison (before/after)
+- Scheduling and time-based business logic
+
+✅ **Use Regular Operators (`lt`, `gt`, etc.) when:**
+- Comparing non-datetime strings or numbers
+- Exact string matching is required
+- Performance is critical for non-datetime data
 
 ### Complex Expressions
 
