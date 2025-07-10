@@ -27,6 +27,15 @@ jobs:
         uses: actions/setup-go@v5
       - name: Run Tests
         run: make test
+  fuzz:
+    name: Fuzz Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+      - name: Run Tests
+        run: make fuzz
   race:
     name: Race Tests
     runs-on: ubuntu-latest

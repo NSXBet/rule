@@ -7,6 +7,7 @@ Please fill out the sections below and remove any that don't apply.
 📋 REQUIREMENTS CHECKLIST (check before submitting):
 - [ ] Tests pass (`make test`)
 - [ ] Linter passes 100% clean (`make lint`) 
+- [ ] Fuzz tests pass (`make fuzz`) for edge case validation
 - [ ] Zero allocations maintained in hot paths (if touching core evaluation)
 - [ ] Benchmarks included for performance changes
 - [ ] Documentation updated if adding features
@@ -15,6 +16,7 @@ Please fill out the sections below and remove any that don't apply.
 - `make test` - Run all tests
 - `make lint` - Run linter (must be 100% clean)
 - `make bench` - Run benchmarks
+- `make fuzz` - Run fuzz tests for edge case detection
 - `make format` - Format code
 
 ⚡ PERFORMANCE REQUIREMENTS:
@@ -33,6 +35,7 @@ Please fill out the sections below and remove any that don't apply.
 - Include edge cases and error scenarios
 - Property-to-property comparisons should have comprehensive coverage
 - DateTime operations should include timezone edge cases
+- Run fuzz tests (`make fuzz`) for comprehensive edge case detection
 
 📖 DOCUMENTATION:
 - Update README if adding features
