@@ -830,18 +830,17 @@ This section provides a comprehensive compatibility analysis between NSXBet/rule
 ### 💡 Decision Framework
 
 **Choose NSXBet/rule if you:**
-- ✅ Need high performance (>10K evaluations/second)
+- ✅ Need higher performance (>10K evaluations/second)
 - ✅ Want zero memory allocations
 - ✅ Require datetime-based business rules
-- ✅ Value defensive error handling
 - ✅ Need property-to-property comparisons
 - ✅ Can handle one breaking change (quoted strings)
 
 **Stick with nikunjy/rules if you:**
 - ❌ Cannot modify unquoted string rules
-- ❌ Heavily depend on panic/error behavior for control flow
+- ❌ Already depend on panic/error behavior for control flow
 - ❌ Need minimal dependencies (NSXBet/rule adds datetime parsing)
-- ❌ Have very low performance requirements
+- ❌ Need a battle tested rule engine
 
 ### 🔍 Code Examples
 
