@@ -8,7 +8,7 @@ import (
 /* ---------- Edge Cases & Advanced Scenarios ---------- */
 
 //nolint:gochecknoglobals // Test data
-var EdgeCaseTests = []TestCase{
+var EdgeCaseTests = []Case{
 	// Deep nesting (3+ levels)
 	{"deep_nested_eq", "a.b.c eq d.e.f", map[string]any{
 		"a": map[string]any{"b": map[string]any{"c": 42}},
@@ -64,7 +64,7 @@ var EdgeCaseTests = []TestCase{
 /* ---------- String Operation Edge Cases ---------- */
 
 //nolint:gochecknoglobals // Test data
-var StringEdgeCaseTests = []TestCase{
+var StringEdgeCaseTests = []Case{
 	// String operations between properties
 	{"prop_contains_nested", "user.email co domain.suffix", map[string]any{
 		"user":   map[string]any{"email": "john@example.com"},
@@ -93,7 +93,7 @@ var StringEdgeCaseTests = []TestCase{
 /* ---------- Numeric Edge Cases ---------- */
 
 //nolint:gochecknoglobals // Test data
-var NumericEdgeCaseTests = []TestCase{
+var NumericEdgeCaseTests = []Case{
 	// Large numbers
 	{"large_int_eq", "x eq y", map[string]any{
 		"x": 9223372036854775807,
@@ -117,7 +117,7 @@ var NumericEdgeCaseTests = []TestCase{
 /* ---------- Array/Membership Edge Cases ---------- */
 
 //nolint:gochecknoglobals // Test data
-var ArrayEdgeCaseTests = []TestCase{
+var ArrayEdgeCaseTests = []Case{
 	// Mixed type arrays
 	{"mixed_array_string", `x in ["1", "42", "3.14"]`, map[string]any{
 		"x": "42",
@@ -151,7 +151,7 @@ var ArrayEdgeCaseTests = []TestCase{
 /* ---------- Presence (pr) Edge Cases ---------- */
 
 //nolint:gochecknoglobals // Test data
-var PresenceEdgeCaseTests = []TestCase{
+var PresenceEdgeCaseTests = []Case{
 	// Nested presence
 	{"nested_presence_true", "user.profile pr", map[string]any{
 		"user": map[string]any{"profile": map[string]any{"name": "John"}},
@@ -177,7 +177,7 @@ var PresenceEdgeCaseTests = []TestCase{
 /* ---------- Extreme Values ---------- */
 
 //nolint:gochecknoglobals // Test data
-var ExtremeValueTests = []TestCase{
+var ExtremeValueTests = []Case{
 	// Very long strings
 	{"long_string_eq", `x eq "` + strings.Repeat("a", 1000) + `"`, map[string]any{
 		"x": strings.Repeat("a", 1000),

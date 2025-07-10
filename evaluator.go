@@ -138,7 +138,7 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
 		}
 
 		// Otherwise, continue navigation
-		if nextMap, ok := currentMap.(map[string]any); ok {
+		if nextMap, isMap := currentMap.(map[string]any); isMap {
 			current = nextMap
 		} else {
 			// For invalid nested access, return invalid result
@@ -197,7 +197,7 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 						return nil
 					}
 
-					if nextMap, ok := currentValue.(map[string]any); ok {
+					if nextMap, isMap := currentValue.(map[string]any); isMap {
 						current = nextMap
 					} else {
 						result.Type = ValueBoolean
@@ -432,7 +432,11 @@ func (e *Evaluator) setUintegerResult(result *EvalResult, value any) {
 	switch v := value.(type) {
 	case uint:
 		result.Num = float64(v)
-		result.IntValue = int64(v)
+		if v <= uint(maxSafeInteger) {
+			result.IntValue = int64(v)
+		} else {
+			result.IntValue = maxSafeInteger
+		}
 	case uint8:
 		result.Num = float64(v)
 		result.IntValue = int64(v)
@@ -444,7 +448,11 @@ func (e *Evaluator) setUintegerResult(result *EvalResult, value any) {
 		result.IntValue = int64(v)
 	case uint64:
 		result.Num = float64(v)
-		result.IntValue = int64(v)
+		if v <= uint64(maxSafeInteger) {
+			result.IntValue = int64(v)
+		} else {
+			result.IntValue = maxSafeInteger
+		}
 	}
 }
 
@@ -666,7 +674,7 @@ func (e *Evaluator) resultToString(result *EvalResult) string {
 		return strconv.FormatFloat(result.Num, 'f', -1, 64)
 	case ValueBoolean:
 		if result.Bool {
-			return "true"
+			return trueString
 		}
 
 		return "false"

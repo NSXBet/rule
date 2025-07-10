@@ -3,7 +3,7 @@ package test
 // AdditionalEdgeCaseTests contains additional edge case tests for comprehensive coverage.
 //
 //nolint:gochecknoglobals // Test data
-var AdditionalEdgeCaseTests = []TestCase{
+var AdditionalEdgeCaseTests = []Case{
 	// String edge cases (focusing on supported features)
 	{"quote_in_string", `name eq "John \"The Great\" Doe"`, map[string]any{"name": `John "The Great" Doe`}, true},
 	{"single_quote_in_string", `name eq "John's book"`, map[string]any{"name": "John's book"}, true},

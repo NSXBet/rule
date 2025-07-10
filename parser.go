@@ -21,6 +21,10 @@ func NewParser(tokens []Token) *Parser {
 	return p
 }
 
+func (p *Parser) Parse() (*ASTNode, error) {
+	return p.parseExpression()
+}
+
 func (p *Parser) advance() {
 	if p.current < len(p.tokens)-1 {
 		p.current++
@@ -41,7 +45,7 @@ func (p *Parser) isLargeIntegerString(s string) (int64, bool) {
 	// Check if it's a valid integer
 	if val, err := strconv.ParseInt(s, 10, 64); err == nil {
 		// Check if it would lose precision when converted to float64
-		if val > 9007199254740992 || val < -9007199254740992 { // 2^53
+		if val > maxSafeInteger || val < minSafeInteger {
 			return val, true
 		}
 	}
@@ -64,10 +68,6 @@ func (p *Parser) expect(tokenType TokenType) error {
 	return nil
 }
 
-func (p *Parser) Parse() (*ASTNode, error) {
-	return p.parseExpression()
-}
-
 func (p *Parser) parseExpression() (*ASTNode, error) {
 	return p.parseOrExpression()
 }
@@ -82,9 +82,9 @@ func (p *Parser) parseOrExpression() (*ASTNode, error) {
 		op := p.curToken.Type
 		p.advance()
 
-		right, err := p.parseAndExpression()
-		if err != nil {
-			return nil, err
+		right, parseErr := p.parseAndExpression()
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
 		left = NewBinaryOpNode(op, left, right)
@@ -103,9 +103,9 @@ func (p *Parser) parseAndExpression() (*ASTNode, error) {
 		op := p.curToken.Type
 		p.advance()
 
-		right, err := p.parseNotExpression()
-		if err != nil {
-			return nil, err
+		right, parseErr := p.parseNotExpression()
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
 		left = NewBinaryOpNode(op, left, right)
@@ -143,9 +143,9 @@ func (p *Parser) parseComparisonExpression() (*ASTNode, error) {
 			return NewUnaryOpNode(PR, left), nil
 		}
 
-		right, err := p.parsePrimaryExpression()
-		if err != nil {
-			return nil, err
+		right, parseErr := p.parsePrimaryExpression()
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
 		return NewBinaryOpNode(op, left, right), nil
@@ -164,8 +164,8 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 			return nil, err
 		}
 
-		if err := p.expect(PAREN_CLOSE); err != nil {
-			return nil, err
+		if expectErr := p.expect(PAREN_CLOSE); expectErr != nil {
+			return nil, expectErr
 		}
 
 		return expr, nil

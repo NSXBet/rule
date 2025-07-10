@@ -114,6 +114,14 @@ func TestTokenPosition(t *testing.T) {
 		End:   9,
 	}
 
+	if token.Type != IDENTIFIER {
+		t.Errorf("Expected type IDENTIFIER, got %v", token.Type)
+	}
+
+	if token.Value != "test" {
+		t.Errorf("Expected value 'test', got %s", token.Value)
+	}
+
 	if token.Start != 5 {
 		t.Errorf("Expected start position 5, got %d", token.Start)
 	}

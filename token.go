@@ -8,14 +8,14 @@ const (
 	STRING
 	NUMBER
 	BOOLEAN
-	ARRAY_START
-	ARRAY_END
-	PAREN_OPEN
-	PAREN_CLOSE
+	ARRAY_START //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
+	ARRAY_END   //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
+	PAREN_OPEN  //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
+	PAREN_CLOSE //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
 	DOT
 	COMMA
 
-	// Operators.
+	// EQ represents the equality operator.
 	EQ
 	NE
 	LT
@@ -28,7 +28,7 @@ const (
 	IN
 	PR
 
-	// Datetime Operators.
+	// DQ represents the datetime equality operator.
 	DQ // datetime equal
 	DN // datetime not equal
 	BE // before
@@ -36,14 +36,14 @@ const (
 	AF // after
 	AQ // after or equal
 
-	// Logical.
+	// AND represents the logical AND operator.
 	AND
 	OR
 	NOT
 
-	// Aliases.
+	// EQUALS is an alias for the equality operator.
 	EQUALS     // ==
-	NOT_EQUALS // !=
+	NOT_EQUALS //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
 )
 
 type Token struct {
@@ -55,102 +55,75 @@ type Token struct {
 	BoolValue bool
 }
 
+//nolint:gochecknoglobals // Static keyword lookup table
 var keywordMap = map[string]TokenType{
-	"eq":    EQ,
-	"ne":    NE,
-	"lt":    LT,
-	"gt":    GT,
-	"le":    LE,
-	"ge":    GE,
-	"co":    CO,
-	"sw":    SW,
-	"ew":    EW,
-	"in":    IN,
-	"pr":    PR,
-	"dq":    DQ,
-	"dn":    DN,
-	"be":    BE,
-	"bq":    BQ,
-	"af":    AF,
-	"aq":    AQ,
-	"and":   AND,
-	"or":    OR,
-	"not":   NOT,
-	"true":  BOOLEAN,
-	"false": BOOLEAN,
+	"eq":       EQ,
+	"ne":       NE,
+	"lt":       LT,
+	"gt":       GT,
+	"le":       LE,
+	"ge":       GE,
+	"co":       CO,
+	"sw":       SW,
+	"ew":       EW,
+	"in":       IN,
+	"pr":       PR,
+	"dq":       DQ,
+	"dn":       DN,
+	"be":       BE,
+	"bq":       BQ,
+	"af":       AF,
+	"aq":       AQ,
+	"and":      AND,
+	"or":       OR,
+	"not":      NOT,
+	trueString: BOOLEAN,
+	"false":    BOOLEAN,
+}
+
+//nolint:gochecknoglobals // Static token string lookup table
+var tokenStringMap = map[TokenType]string{
+	EOF:         "EOF",
+	IDENTIFIER:  "IDENTIFIER",
+	STRING:      "STRING",
+	NUMBER:      "NUMBER",
+	BOOLEAN:     "BOOLEAN",
+	ARRAY_START: "[",
+	ARRAY_END:   "]",
+	PAREN_OPEN:  "(",
+	PAREN_CLOSE: ")",
+	DOT:         ".",
+	COMMA:       ",",
+	EQ:          "eq",
+	NE:          "ne",
+	LT:          "lt",
+	GT:          "gt",
+	LE:          "le",
+	GE:          "ge",
+	CO:          "co",
+	SW:          "sw",
+	EW:          "ew",
+	IN:          "in",
+	PR:          "pr",
+	DQ:          "dq",
+	DN:          "dn",
+	BE:          "be",
+	BQ:          "bq",
+	AF:          "af",
+	AQ:          "aq",
+	AND:         "and",
+	OR:          "or",
+	NOT:         "not",
+	EQUALS:      "==",
+	NOT_EQUALS:  "!=",
 }
 
 func (t TokenType) String() string {
-	switch t {
-	case EOF:
-		return "EOF"
-	case IDENTIFIER:
-		return "IDENTIFIER"
-	case STRING:
-		return "STRING"
-	case NUMBER:
-		return "NUMBER"
-	case BOOLEAN:
-		return "BOOLEAN"
-	case ARRAY_START:
-		return "["
-	case ARRAY_END:
-		return "]"
-	case PAREN_OPEN:
-		return "("
-	case PAREN_CLOSE:
-		return ")"
-	case DOT:
-		return "."
-	case COMMA:
-		return ","
-	case EQ:
-		return "eq"
-	case NE:
-		return "ne"
-	case LT:
-		return "lt"
-	case GT:
-		return "gt"
-	case LE:
-		return "le"
-	case GE:
-		return "ge"
-	case CO:
-		return "co"
-	case SW:
-		return "sw"
-	case EW:
-		return "ew"
-	case IN:
-		return "in"
-	case PR:
-		return "pr"
-	case DQ:
-		return "dq"
-	case DN:
-		return "dn"
-	case BE:
-		return "be"
-	case BQ:
-		return "bq"
-	case AF:
-		return "af"
-	case AQ:
-		return "aq"
-	case AND:
-		return "and"
-	case OR:
-		return "or"
-	case NOT:
-		return "not"
-	case EQUALS:
-		return "=="
-	case NOT_EQUALS:
-		return "!="
-	default:
-		return "UNKNOWN"
+	if str, exists := tokenStringMap[t]; exists {
+		return str
 	}
+
+	return "UNKNOWN"
 }
 
 func (t Token) String() string {

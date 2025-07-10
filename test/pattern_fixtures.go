@@ -3,7 +3,7 @@ package test
 /* ---------- Complex String Patterns ---------- */
 
 //nolint:gochecknoglobals // Test data
-var ComplexStringPatternTests = []TestCase{
+var ComplexStringPatternTests = []Case{
 	// Email-like patterns
 	{
 		"email_validation",

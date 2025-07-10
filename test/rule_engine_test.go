@@ -8,7 +8,7 @@ import (
 )
 
 func TestRulesRound1(t *testing.T) {
-	all := [][]TestCase{
+	all := [][]Case{
 		// Core functionality tests
 		EqualTests,
 		RelationalTests,

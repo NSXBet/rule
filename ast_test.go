@@ -48,6 +48,8 @@ func TestASTNodeHelpers(t *testing.T) {
 }
 
 // Test AST node constructors.
+//
+//nolint:gocognit,gocyclo,cyclop // Test function complexity is acceptable
 func TestASTNodeConstructors(t *testing.T) {
 	// Test NewBinaryOpNode
 	left := NewNumberLiteralNode(1)

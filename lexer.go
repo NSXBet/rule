@@ -18,11 +18,155 @@ func NewLexer(input string) *Lexer {
 	l := &Lexer{
 		input:  input,
 		runes:  []rune(input),
-		tokens: make([]Token, 0, 32),
+		tokens: make([]Token, 0, tokenSliceInitialCapacity),
 	}
 	l.readChar()
 
 	return l
+}
+
+func (l *Lexer) Tokenize() []Token {
+	for l.current != 0 {
+		l.skipWhitespace()
+
+		if l.current == 0 {
+			break
+		}
+
+		start := l.position - 1
+
+		switch l.current {
+		case '(':
+			l.tokens = append(l.tokens, Token{Type: PAREN_OPEN, Start: start, End: l.position})
+			l.readChar()
+		case ')':
+			l.tokens = append(l.tokens, Token{Type: PAREN_CLOSE, Start: start, End: l.position})
+			l.readChar()
+		case '[':
+			l.tokens = append(l.tokens, Token{Type: ARRAY_START, Start: start, End: l.position})
+			l.readChar()
+		case ']':
+			l.tokens = append(l.tokens, Token{Type: ARRAY_END, Start: start, End: l.position})
+			l.readChar()
+		case '.':
+			l.tokens = append(l.tokens, Token{Type: DOT, Start: start, End: l.position})
+			l.readChar()
+		case ',':
+			l.tokens = append(l.tokens, Token{Type: COMMA, Start: start, End: l.position})
+			l.readChar()
+		case '"':
+			value := l.readString()
+			l.tokens = append(l.tokens, Token{
+				Type:  STRING,
+				Value: value,
+				Start: start,
+				End:   l.position - 1,
+			})
+		case '=':
+			if l.peekChar() == '=' {
+				l.readChar()
+				l.readChar()
+				l.tokens = append(l.tokens, Token{Type: EQUALS, Start: start, End: l.position - 1})
+			} else {
+				l.readChar()
+			}
+		case '!':
+			if l.peekChar() == '=' {
+				l.readChar()
+				l.readChar()
+				l.tokens = append(
+					l.tokens,
+					Token{Type: NOT_EQUALS, Start: start, End: l.position - 1},
+				)
+			} else {
+				l.readChar()
+			}
+		case '-':
+			// Check if this is a negative number
+			if unicode.IsDigit(l.peekChar()) {
+				l.readChar() // consume the '-'
+				value, num, isLargeInt := l.readNumber()
+				// Make it negative
+				value = "-" + value
+				num = -num
+
+				if isLargeInt {
+					// Store large integers as strings to preserve precision
+					l.tokens = append(l.tokens, Token{
+						Type:  STRING,
+						Value: value,
+						Start: start,
+						End:   l.position - 1,
+					})
+				} else {
+					l.tokens = append(l.tokens, Token{
+						Type:     NUMBER,
+						Value:    value,
+						NumValue: num,
+						Start:    start,
+						End:      l.position - 1,
+					})
+				}
+			} else {
+				// Just a minus operator
+				l.readChar()
+			}
+		default:
+			switch {
+			case unicode.IsDigit(l.current):
+				value, num, isLargeInt := l.readNumber()
+				if isLargeInt {
+					// Store large integers as strings to preserve precision
+					l.tokens = append(l.tokens, Token{
+						Type:  STRING,
+						Value: value,
+						Start: start,
+						End:   l.position - 1,
+					})
+				} else {
+					l.tokens = append(l.tokens, Token{
+						Type:     NUMBER,
+						Value:    value,
+						NumValue: num,
+						Start:    start,
+						End:      l.position - 1,
+					})
+				}
+			case unicode.IsLetter(l.current) || l.current == '_':
+				value := l.readIdentifier()
+				tokenType := IDENTIFIER
+
+				if kwType, exists := keywordMap[value]; exists {
+					tokenType = kwType
+					if tokenType == BOOLEAN {
+						boolVal := value == trueString
+						l.tokens = append(l.tokens, Token{
+							Type:      BOOLEAN,
+							Value:     value,
+							BoolValue: boolVal,
+							Start:     start,
+							End:       l.position - 1,
+						})
+
+						continue
+					}
+				}
+
+				l.tokens = append(l.tokens, Token{
+					Type:  tokenType,
+					Value: value,
+					Start: start,
+					End:   l.position - 1,
+				})
+			default:
+				l.readChar()
+			}
+		}
+	}
+
+	l.tokens = append(l.tokens, Token{Type: EOF, Start: l.position, End: l.position})
+
+	return l.tokens
 }
 
 func (l *Lexer) readChar() {
@@ -125,7 +269,7 @@ func (l *Lexer) isLargeInteger(s string) bool {
 	// Parse as int64 to check if it's a large integer
 	if val, err := strconv.ParseInt(s, 10, 64); err == nil {
 		// Check if it would lose precision when converted to float64
-		return val > 9007199254740992 || val < -9007199254740992 // 2^53
+		return val > maxSafeInteger || val < minSafeInteger
 	}
 
 	return false
@@ -139,147 +283,4 @@ func (l *Lexer) readIdentifier() string {
 	}
 
 	return string(l.runes[start : l.position-1])
-}
-
-func (l *Lexer) Tokenize() []Token {
-	for l.current != 0 {
-		l.skipWhitespace()
-
-		if l.current == 0 {
-			break
-		}
-
-		start := l.position - 1
-
-		switch l.current {
-		case '(':
-			l.tokens = append(l.tokens, Token{Type: PAREN_OPEN, Start: start, End: l.position})
-			l.readChar()
-		case ')':
-			l.tokens = append(l.tokens, Token{Type: PAREN_CLOSE, Start: start, End: l.position})
-			l.readChar()
-		case '[':
-			l.tokens = append(l.tokens, Token{Type: ARRAY_START, Start: start, End: l.position})
-			l.readChar()
-		case ']':
-			l.tokens = append(l.tokens, Token{Type: ARRAY_END, Start: start, End: l.position})
-			l.readChar()
-		case '.':
-			l.tokens = append(l.tokens, Token{Type: DOT, Start: start, End: l.position})
-			l.readChar()
-		case ',':
-			l.tokens = append(l.tokens, Token{Type: COMMA, Start: start, End: l.position})
-			l.readChar()
-		case '"':
-			value := l.readString()
-			l.tokens = append(l.tokens, Token{
-				Type:  STRING,
-				Value: value,
-				Start: start,
-				End:   l.position - 1,
-			})
-		case '=':
-			if l.peekChar() == '=' {
-				l.readChar()
-				l.readChar()
-				l.tokens = append(l.tokens, Token{Type: EQUALS, Start: start, End: l.position - 1})
-			} else {
-				l.readChar()
-			}
-		case '!':
-			if l.peekChar() == '=' {
-				l.readChar()
-				l.readChar()
-				l.tokens = append(
-					l.tokens,
-					Token{Type: NOT_EQUALS, Start: start, End: l.position - 1},
-				)
-			} else {
-				l.readChar()
-			}
-		case '-':
-			// Check if this is a negative number
-			if unicode.IsDigit(l.peekChar()) {
-				l.readChar() // consume the '-'
-				value, num, isLargeInt := l.readNumber()
-				// Make it negative
-				value = "-" + value
-				num = -num
-
-				if isLargeInt {
-					// Store large integers as strings to preserve precision
-					l.tokens = append(l.tokens, Token{
-						Type:  STRING,
-						Value: value,
-						Start: start,
-						End:   l.position - 1,
-					})
-				} else {
-					l.tokens = append(l.tokens, Token{
-						Type:     NUMBER,
-						Value:    value,
-						NumValue: num,
-						Start:    start,
-						End:      l.position - 1,
-					})
-				}
-			} else {
-				// Just a minus operator
-				l.readChar()
-			}
-		default:
-			if unicode.IsDigit(l.current) {
-				value, num, isLargeInt := l.readNumber()
-				if isLargeInt {
-					// Store large integers as strings to preserve precision
-					l.tokens = append(l.tokens, Token{
-						Type:  STRING,
-						Value: value,
-						Start: start,
-						End:   l.position - 1,
-					})
-				} else {
-					l.tokens = append(l.tokens, Token{
-						Type:     NUMBER,
-						Value:    value,
-						NumValue: num,
-						Start:    start,
-						End:      l.position - 1,
-					})
-				}
-			} else if unicode.IsLetter(l.current) || l.current == '_' {
-				value := l.readIdentifier()
-				tokenType := IDENTIFIER
-
-				if kwType, exists := keywordMap[value]; exists {
-					tokenType = kwType
-					if tokenType == BOOLEAN {
-						boolVal := value == "true"
-						l.tokens = append(l.tokens, Token{
-							Type:      BOOLEAN,
-							Value:     value,
-							BoolValue: boolVal,
-							Start:     start,
-							End:       l.position - 1,
-						})
-
-						continue
-					}
-				}
-
-				l.tokens = append(l.tokens, Token{
-					Type:  tokenType,
-					Value: value,
-					Start: start,
-					End:   l.position - 1,
-				})
-			} else {
-				l.readChar()
-			}
-		}
-	}
-
-	l.tokens = append(l.tokens, Token{Type: EOF, Start: l.position, End: l.position})
-
-	return l.tokens
 }

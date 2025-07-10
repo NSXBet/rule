@@ -3,7 +3,7 @@ package test
 /* ---------- Whitespace and Formatting Edge Cases ---------- */
 
 //nolint:gochecknoglobals // Test data
-var WhitespaceTests = []TestCase{
+var WhitespaceTests = []Case{
 	// Extra spaces
 	{"extra_spaces", "  x    eq    10   ", map[string]any{"x": 10}, true},
 	{"tabs_and_spaces", "x\teq\t10", map[string]any{"x": 10}, true},
@@ -27,7 +27,7 @@ var WhitespaceTests = []TestCase{
 /* ---------- Advanced Operator Precedence ---------- */
 
 //nolint:gochecknoglobals // Test data
-var AdvancedPrecedenceTests = []TestCase{
+var AdvancedPrecedenceTests = []Case{
 	// Complex precedence without parentheses
 	{"precedence_and_or", "a eq 1 and b eq 2 or c eq 3", map[string]any{"a": 1, "b": 2, "c": 4}, true},
 	{"precedence_and_or_2", "a eq 1 and b eq 2 or c eq 3", map[string]any{"a": 2, "b": 2, "c": 3}, true},
@@ -62,7 +62,7 @@ var AdvancedPrecedenceTests = []TestCase{
 /* ---------- Type Coercion Stress Tests ---------- */
 
 //nolint:gochecknoglobals // Test data
-var TypeCoercionStressTests = []TestCase{
+var TypeCoercionStressTests = []Case{
 	// Numeric precision edge cases
 	{"float_precision", "x eq 0.1000000000000001", map[string]any{"x": 0.1000000000000001}, true},
 	{"float_precision_2", "x eq 0.1000000000000001", map[string]any{"x": 0.1}, false},
@@ -95,7 +95,7 @@ var TypeCoercionStressTests = []TestCase{
 /* ---------- Performance Stress Tests ---------- */
 
 //nolint:gochecknoglobals // Test data
-var PerformanceStressTests = []TestCase{
+var PerformanceStressTests = []Case{
 	// Long chains of operations
 	{
 		"long_and_chain",
@@ -162,7 +162,7 @@ var PerformanceStressTests = []TestCase{
 /* ---------- Boundary Conditions ---------- */
 
 //nolint:gochecknoglobals // Test data
-var BoundaryConditionTests = []TestCase{
+var BoundaryConditionTests = []Case{
 	// Empty contexts
 	{"empty_context_missing", "x eq 10", map[string]any{}, false},
 	{"empty_context_presence", "x pr", map[string]any{}, false},
@@ -187,7 +187,7 @@ var BoundaryConditionTests = []TestCase{
 /* ---------- Special Numeric Values ---------- */
 
 //nolint:gochecknoglobals // Test data
-var SpecialNumericTests = []TestCase{
+var SpecialNumericTests = []Case{
 	// Very small numbers (using regular notation)
 	{"very_small_positive", "x gt 0", map[string]any{"x": 1e-100}, true},
 	{"very_small_negative", "x lt 0", map[string]any{"x": -1e-100}, true},

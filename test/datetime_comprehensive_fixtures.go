@@ -3,7 +3,7 @@ package test
 // DateTimeComprehensiveTests contains exhaustive datetime operator test cases.
 //
 //nolint:gochecknoglobals // Test data
-var DateTimeComprehensiveTests = []TestCase{
+var DateTimeComprehensiveTests = []Case{
 	// Property vs Property - Unix timestamp vs Unix timestamp
 	{"datetime_prop_unix_vs_unix_after", `start_time af end_time`, map[string]any{
 		"start_time": int64(1720558321),

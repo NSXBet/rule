@@ -182,6 +182,7 @@ func BenchmarkComparisonStringOps(b *testing.B) {
 	})
 }
 
+//nolint:gocognit // Benchmark function complexity is acceptable
 func BenchmarkComparisonInOperator(b *testing.B) {
 	ctx := map[string]any{
 		"color": "red",
@@ -303,6 +304,8 @@ func BenchmarkComparisonNestedProps(b *testing.B) {
 }
 
 // Test with different query patterns to show pre-compilation advantage.
+//
+//nolint:gocognit // Benchmark function complexity is acceptable
 func BenchmarkComparisonManyQueries(b *testing.B) {
 	ctx := map[string]any{"x": 10, "y": 20, "z": 30}
 	queries := []string{

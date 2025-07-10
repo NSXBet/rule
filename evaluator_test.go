@@ -428,11 +428,9 @@ func TestEvaluatorErrorConditions(t *testing.T) {
 	if err != nil {
 		// This is expected for invalid nested attributes
 		t.Logf("Got expected error for invalid nested attribute: %v", err)
-	} else {
+	} else if result {
 		// Or might return false
-		if result {
-			t.Error("Expected false for invalid nested attribute")
-		}
+		t.Error("Expected false for invalid nested attribute")
 	}
 
 	// Test invalid property access on non-map
@@ -444,11 +442,9 @@ func TestEvaluatorErrorConditions(t *testing.T) {
 	if err != nil {
 		// This is expected for property access on non-map
 		t.Logf("Got expected error for property access on non-map: %v", err)
-	} else {
+	} else if result {
 		// Or might return false
-		if result {
-			t.Error("Expected false for property access on non-map")
-		}
+		t.Error("Expected false for property access on non-map")
 	}
 }
 

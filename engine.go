@@ -84,9 +84,9 @@ func (e *Engine) ClearCache() {
 }
 
 func hash(s string) uint64 {
-	h := uint64(5381)
+	h := uint64(hashOffsetBasis)
 	for i := range len(s) {
-		h = ((h << 5) + h) + uint64(s[i])
+		h = ((h << hashPrime) + h) + uint64(s[i])
 	}
 
 	return h

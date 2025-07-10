@@ -1,7 +1,7 @@
 package test
 
-// TestCase bundles one rule, its context, and the expected boolean result.
-type TestCase struct {
+// Case bundles one rule, its context, and the expected boolean result.
+type Case struct {
 	Name   string
 	Query  string
 	Ctx    map[string]any
@@ -11,7 +11,7 @@ type TestCase struct {
 /* ---------- Equality & inequality ---------- */
 
 //nolint:gochecknoglobals // Test data
-var EqualTests = []TestCase{
+var EqualTests = []Case{
 	// ints
 	{"eq_int_true", "x eq 1", map[string]any{"x": 1}, true},
 	{"eq_int_false", "x eq 1", map[string]any{"x": 2}, false},
@@ -46,7 +46,7 @@ var EqualTests = []TestCase{
 /* ---------- Relational (<, >, <=, >=) ---------- */
 
 //nolint:gochecknoglobals // Test data
-var RelationalTests = []TestCase{
+var RelationalTests = []Case{
 	{"lt_true", "score lt 10", map[string]any{"score": 5}, true},
 	{"lt_false", "score lt 10", map[string]any{"score": 10}, false},
 	{"gt_true", "score gt 10", map[string]any{"score": 11}, true},
@@ -60,7 +60,7 @@ var RelationalTests = []TestCase{
 /* ---------- String operations (co, sw, ew) ---------- */
 
 //nolint:gochecknoglobals // Test data
-var StringOpTests = []TestCase{
+var StringOpTests = []Case{
 	{"co_true", `city co "York"`, map[string]any{"city": "New York"}, true},
 	{"co_false", `city co "York"`, map[string]any{"city": "Boston"}, false},
 	{"sw_true", `id sw "user_"`, map[string]any{"id": "user_123"}, true},
@@ -72,7 +72,7 @@ var StringOpTests = []TestCase{
 /* ---------- Membership (in) ---------- */
 
 //nolint:gochecknoglobals // Test data
-var InTests = []TestCase{
+var InTests = []Case{
 	{"in_int_true", "x in [1,2,3]", map[string]any{"x": 2}, true},
 	{"in_int_false", "x in [1,2,3]", map[string]any{"x": 4}, false},
 	{
@@ -92,7 +92,7 @@ var InTests = []TestCase{
 /* ---------- Presence (pr) ---------- */
 
 //nolint:gochecknoglobals // Test data
-var PresenceTests = []TestCase{
+var PresenceTests = []Case{
 	{"pr_present", "betaUser pr", map[string]any{"betaUser": true}, true},
 	{"pr_missing", "betaUser pr", map[string]any{}, false},
 }
@@ -100,7 +100,7 @@ var PresenceTests = []TestCase{
 /* ---------- NOT, AND, OR, nesting ---------- */
 
 //nolint:gochecknoglobals // Test data
-var LogicalTests = []TestCase{
+var LogicalTests = []Case{
 	{"not_true", "not (x eq 1)", map[string]any{"x": 2}, true},
 	{"not_false", "not (x eq 1)", map[string]any{"x": 1}, false},
 	{"and_true", "(x gt 1) and (y lt 5)", map[string]any{"x": 2, "y": 3}, true},

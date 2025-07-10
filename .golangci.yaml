@@ -12,6 +12,7 @@
 
 version: "2"
 
+
 issues:
   # Maximum count of issues with the same text.
   # Set to 0 to disable.
@@ -109,7 +110,6 @@ linters:
     - staticcheck # is a go vet on steroids, applying a ton of static analysis checks
     - testableexamples # checks if examples are testable (have an expected output)
     - testifylint # checks usage of github.com/stretchr/testify
-    - testpackage # makes you use a separate _test package
     - tparallel # detects inappropriate usage of t.Parallel() method in your Go test codes
     - unconvert # removes unnecessary type conversions
     - unparam # reports unused function parameters
@@ -441,5 +441,9 @@ linters:
           - funlen
           - goconst
           - gosec
+          - mnd
           - noctx
           - wrapcheck
+      - path: 'test/'
+        linters:
+          - mnd

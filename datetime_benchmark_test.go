@@ -140,9 +140,9 @@ func BenchmarkDateTimeOperators(b *testing.B) {
 			allocsBefore := memStats.Mallocs
 
 			for range b.N {
-				_, err := engine.Evaluate(tc.query, tc.ctx)
-				if err != nil {
-					b.Fatal(err)
+				_, evalErr := engine.Evaluate(tc.query, tc.ctx)
+				if evalErr != nil {
+					b.Fatal(evalErr)
 				}
 			}
 
