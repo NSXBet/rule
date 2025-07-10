@@ -496,6 +496,11 @@ func (e *Evaluator) setResultFromAny(result *EvalResult, value any) {
 	case string:
 		result.Type = ValueString
 		result.Str = v
+	case time.Time:
+		// Store time.Time values as strings for compatibility with nikunjy/rules
+		// The original time.Time is preserved in OriginalValue for datetime operators
+		result.Type = ValueString
+		result.Str = v.String()
 	case []any:
 		// Handle []any slices by storing original value
 		result.Type = ValueArray
@@ -811,6 +816,11 @@ func (e *Evaluator) toString(value any) string {
 
 // parseDateTime attempts to parse a value as a datetime, supporting RFC 3339 and Unix timestamps.
 func (e *Evaluator) parseDateTime(result *EvalResult) (time.Time, bool) {
+	// Check if the original value is a time.Time (for context values)
+	if t, ok := result.OriginalValue.(time.Time); ok {
+		return t.UTC(), true
+	}
+
 	switch result.Type {
 	case ValueString:
 		// Try parsing as RFC 3339 first
