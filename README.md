@@ -765,8 +765,6 @@ This section provides a comprehensive compatibility analysis between NSXBet/rule
 | **DateTime Operators** | Native datetime comparison | `created_at af "2024-01-01T00:00:00Z"` | Time-based business rules |
 | **Property-to-Property** | Compare any two properties | `user.age gt limits.minimum` | Dynamic threshold validation |
 | **Deep Property Comparison** | Multi-level nested comparisons | `config.max eq system.limits.ceiling` | Complex configuration rules |
-| **Enhanced Performance** | 100x faster, zero allocations | Same API, better performance | High-throughput applications |
-| **Better Error Handling** | Graceful degradation | Defensive programming approach | Production reliability |
 | **rule.D Type Alias** | Cleaner syntax | `rule.D{"key": "value"}` | Developer experience |
 
 ### 🔧 Migration Assessment
