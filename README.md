@@ -710,10 +710,10 @@ go test -bench=BenchmarkDateTime -benchmem .
 - 🔄 Real-time systems and hot paths
 
 **nikunjy/rules is great for:**
-- 🛠️ Rapid prototyping and development
 - 📖 Excellent documentation and examples
 - 🏗️ Less performance-critical applications
 - 👥 Large community and ecosystem
+- 🛠️ Very battle-tested solution
 
 **text/template works well for:**
 - 📝 Template generation and formatting
