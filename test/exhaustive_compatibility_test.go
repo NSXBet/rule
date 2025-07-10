@@ -305,27 +305,24 @@ func TestExhaustiveCompatibility(t *testing.T) {
 			t.Logf("nikunjy/rules: %v (err: %v)", rulesResult, rulesErr)
 			t.Logf("Our library: %v (err: %v)", ourResult, ourErr)
 
-			if test.incompatible {
-				if resultsMatch {
-					t.Logf("⚠️  UNEXPECTED COMPATIBILITY")
-					t.Logf("   Expected incompatible because: %s", test.reason)
+			switch {
+			case test.incompatible && resultsMatch:
+				t.Logf("⚠️  UNEXPECTED COMPATIBILITY")
+				t.Logf("   Expected incompatible because: %s", test.reason)
 
-					unexpectedCompatibilities++
-				} else {
-					t.Logf("✅ EXPECTED INCOMPATIBILITY: %s", test.reason)
+				unexpectedCompatibilities++
+			case test.incompatible && !resultsMatch:
+				t.Logf("✅ EXPECTED INCOMPATIBILITY: %s", test.reason)
 
-					expectedIncompatibilities++
-					actualIncompatibilities++
-				}
-			} else {
-				if resultsMatch {
-					t.Logf("✅ COMPATIBLE as expected")
-				} else {
-					t.Logf("❌ UNEXPECTED INCOMPATIBILITY")
+				expectedIncompatibilities++
+				actualIncompatibilities++
+			case !test.incompatible && resultsMatch:
+				t.Logf("✅ COMPATIBLE as expected")
+			case !test.incompatible && !resultsMatch:
+				t.Logf("❌ UNEXPECTED INCOMPATIBILITY")
 
-					unexpectedIncompatibilities++
-					actualIncompatibilities++
-				}
+				unexpectedIncompatibilities++
+				actualIncompatibilities++
 			}
 		}
 	}

@@ -355,29 +355,33 @@ func TestDeepCompatibility(t *testing.T) {
 		resultsMatch := rulesResult == ourResult
 		overallMatch := errorsMatch && (rulesErr != nil || resultsMatch)
 
-		if overallMatch {
+		switch {
+		case overallMatch && test.ExpectDiff:
 			compatibleTests++
 
-			if test.ExpectDiff {
-				t.Errorf("❌ UNEXPECTED COMPATIBILITY: %s", test.Name)
-				t.Errorf("   Expected difference because: %s", test.Reason)
-				t.Errorf("   But both returned: %v (err: %v)", rulesResult, rulesErr)
+			t.Errorf("❌ UNEXPECTED COMPATIBILITY: %s", test.Name)
+			t.Errorf("   Expected difference because: %s", test.Reason)
+			t.Errorf("   But both returned: %v (err: %v)", rulesResult, rulesErr)
 
-				unexpectedDifferences++
-			} else {
-				t.Logf("✅ COMPATIBLE: both returned %v", rulesResult)
-			}
-		} else {
-			if test.ExpectDiff {
-				t.Logf("✅ EXPECTED DIFFERENCE: %s", test.Reason)
+			unexpectedDifferences++
 
-				expectedDifferences++
-			} else {
-				t.Errorf("❌ UNEXPECTED INCOMPATIBILITY: %s", test.Name)
+		case overallMatch && !test.ExpectDiff:
+			compatibleTests++
 
-				unexpectedDifferences++
-			}
+			t.Logf("✅ COMPATIBLE: both returned %v", rulesResult)
 
+		case !overallMatch && test.ExpectDiff:
+			t.Logf("✅ EXPECTED DIFFERENCE: %s", test.Reason)
+
+			expectedDifferences++
+
+		case !overallMatch && !test.ExpectDiff:
+			t.Errorf("❌ UNEXPECTED INCOMPATIBILITY: %s", test.Name)
+
+			unexpectedDifferences++
+		}
+
+		if !overallMatch {
 			t.Logf("   nikunjy/rules: %v (err: %v)", rulesResult, rulesErr)
 			t.Logf("   Our library: %v (err: %v)", ourResult, ourErr)
 		}

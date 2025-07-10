@@ -71,6 +71,11 @@ go mod download
 
 ## Development Guidelines
 
+### CRITICAL PRODUCTION-READY RULE
+**As long as we have failing tests, examples, benchmarks, formatting or lint errors, OR if our docs are outdated, then our work is NOT done and the library is NOT production-ready.**
+
+This rule ALWAYS takes precedence over any other consideration. No exceptions.
+
 ### Code Standards
 - Use modern Go constructs (any, range patterns, etc.)
 - Avoid `fmt.Sprintf` when possible
