@@ -157,222 +157,327 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
 }
 
 func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
-	var operandResult EvalResult
-
 	switch node.Operator {
 	case NOT:
-		err := e.evaluateNode(node.Left, &operandResult)
-		if err != nil {
-			return err
-		}
-
-		result.Type = ValueBoolean
-		result.Bool = !e.toBool(&operandResult)
-		result.IsValid = true
-
-		return nil
-
+		return e.evaluateNotOperator(node, result)
 	case PR:
-		// Presence check - special case, don't evaluate the operand
-		switch node.Left.Type {
-		case NodeIdentifier:
-			_, exists := e.context[node.Left.Value.StrValue]
-			result.Type = ValueBoolean
-			result.Bool = exists
-			result.IsValid = true
-
-			return nil
-		case NodeProperty:
-			// Check nested property existence
-			current := e.context
-
-			for _, child := range node.Left.Children {
-				key := child.Value.StrValue
-				if currentValue, ok := current[key]; ok {
-					if child == node.Left.Children[len(node.Left.Children)-1] {
-						result.Type = ValueBoolean
-						result.Bool = true
-						result.IsValid = true
-
-						return nil
-					}
-
-					if nextMap, isMap := currentValue.(map[string]any); isMap {
-						current = nextMap
-					} else {
-						result.Type = ValueBoolean
-						result.Bool = false
-						result.IsValid = true
-
-						return nil
-					}
-				} else {
-					result.Type = ValueBoolean
-					result.Bool = false
-					result.IsValid = true
-
-					return nil
-				}
-			}
-		case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray:
-			return ErrInvalidOperator // Invalid node types for PR operator
-		}
-
-		return ErrInvalidOperator
-
-	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
-		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, DQ, DN, BE, BQ, AF, AQ, AND, OR, EQUALS, NOT_EQUALS:
+		return e.evaluatePresenceOperator(node, result)
+	case EOF,
+		IDENTIFIER,
+		STRING,
+		NUMBER,
+		BOOLEAN,
+		ARRAY_START,
+		ARRAY_END,
+		PAREN_OPEN,
+		PAREN_CLOSE,
+		DOT,
+		COMMA,
+		EQ,
+		NE,
+		LT,
+		GT,
+		LE,
+		GE,
+		CO,
+		SW,
+		EW,
+		IN,
+		DQ,
+		DN,
+		BE,
+		BQ,
+		AF,
+		AQ,
+		AND,
+		OR,
+		EQUALS,
+		NOT_EQUALS:
 		return ErrInvalidOperator // These are not unary operators
-
 	default:
 		return ErrInvalidOperator
 	}
 }
 
 func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
-	var leftResult, rightResult EvalResult
-
 	switch node.Operator {
 	case AND:
-		err := e.evaluateNode(node.Left, &leftResult)
-		if err != nil {
-			return err
-		}
-
-		if !e.toBool(&leftResult) {
-			result.Type = ValueBoolean
-			result.Bool = false
-			result.IsValid = true
-
-			return nil
-		}
-
-		err = e.evaluateNode(node.Right, &rightResult)
-		if err != nil {
-			return err
-		}
-
-		result.Type = ValueBoolean
-		result.Bool = e.toBool(&rightResult)
-		result.IsValid = true
-
-		return nil
-
+		return e.evaluateLogicalAnd(node, result)
 	case OR:
-		err := e.evaluateNode(node.Left, &leftResult)
-		if err != nil {
-			return err
-		}
-
-		if e.toBool(&leftResult) {
-			result.Type = ValueBoolean
-			result.Bool = true
-			result.IsValid = true
-
-			return nil
-		}
-
-		err = e.evaluateNode(node.Right, &rightResult)
-		if err != nil {
-			return err
-		}
-
-		result.Type = ValueBoolean
-		result.Bool = e.toBool(&rightResult)
-		result.IsValid = true
-
-		return nil
-
+		return e.evaluateLogicalOr(node, result)
 	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ:
-		// Comparison operations
-		err := e.evaluateNode(node.Left, &leftResult)
-		if err != nil {
-			return err
-		}
-
-		err = e.evaluateNode(node.Right, &rightResult)
-		if err != nil {
-			return err
-		}
-
-		result.Type = ValueBoolean
-		result.IsValid = true
-
-		// If either operand is invalid (missing attribute), comparison is false
-		if !leftResult.IsValid || !rightResult.IsValid {
-			result.Bool = false
-			return nil
-		}
-
-		switch node.Operator {
-		case EQ, EQUALS:
-			result.Bool = e.compareEqual(&leftResult, &rightResult)
-		case NE, NOT_EQUALS:
-			result.Bool = !e.compareEqual(&leftResult, &rightResult)
-		case LT:
-			result.Bool = e.compareNumbers(&leftResult, &rightResult, func(a, b float64) bool { return a < b })
-		case GT:
-			result.Bool = e.compareNumbers(&leftResult, &rightResult, func(a, b float64) bool { return a > b })
-		case LE:
-			result.Bool = e.compareNumbers(&leftResult, &rightResult, func(a, b float64) bool { return a <= b })
-		case GE:
-			result.Bool = e.compareNumbers(&leftResult, &rightResult, func(a, b float64) bool { return a >= b })
-		case CO:
-			result.Bool = e.stringContains(&leftResult, &rightResult)
-		case SW:
-			result.Bool = e.stringStartsWith(&leftResult, &rightResult)
-		case EW:
-			result.Bool = e.stringEndsWith(&leftResult, &rightResult)
-		case IN:
-			result.Bool = e.membershipCheck(&leftResult, &rightResult)
-		case DQ:
-			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.Equal(b) })
-		case DN:
-			result.Bool = !e.compareDateTimes(
-				&leftResult,
-				&rightResult,
-				func(a, b time.Time) bool { return a.Equal(b) },
-			)
-		case BE:
-			result.Bool = e.compareDateTimes(
-				&leftResult,
-				&rightResult,
-				func(a, b time.Time) bool { return a.Before(b) },
-			)
-		case BQ:
-			result.Bool = e.compareDateTimes(
-				&leftResult,
-				&rightResult,
-				func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
-			)
-		case AF:
-			result.Bool = e.compareDateTimes(&leftResult, &rightResult, func(a, b time.Time) bool { return a.After(b) })
-		case AQ:
-			result.Bool = e.compareDateTimes(
-				&leftResult,
-				&rightResult,
-				func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
-			)
-		case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
-			AND, OR, PR, NOT:
-			result.IsValid = false
-			return ErrInvalidOperator // These are not comparison operators
-
-		default:
-			result.IsValid = false
-			return ErrInvalidOperator
-		}
-
-		return nil
-
-	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, PR, NOT:
+		return e.evaluateComparisonOperator(node, result)
+	case EOF,
+		IDENTIFIER,
+		STRING,
+		NUMBER,
+		BOOLEAN,
+		ARRAY_START,
+		ARRAY_END,
+		PAREN_OPEN,
+		PAREN_CLOSE,
+		DOT,
+		COMMA,
+		PR,
+		NOT:
 		result.IsValid = false
 		return ErrInvalidOperator // These are not binary operators
-
 	default:
 		result.IsValid = false
 		return ErrInvalidOperator
 	}
+}
+
+// evaluateNotOperator handles the NOT unary operator.
+func (e *Evaluator) evaluateNotOperator(node *ASTNode, result *EvalResult) error {
+	var operandResult EvalResult
+
+	err := e.evaluateNode(node.Left, &operandResult)
+	if err != nil {
+		return err
+	}
+
+	result.Type = ValueBoolean
+	result.Bool = !e.toBool(&operandResult)
+	result.IsValid = true
+
+	return nil
+}
+
+// evaluatePresenceOperator handles the PR (presence) unary operator.
+func (e *Evaluator) evaluatePresenceOperator(node *ASTNode, result *EvalResult) error {
+	switch node.Left.Type {
+	case NodeIdentifier:
+		return e.checkIdentifierPresence(node, result)
+	case NodeProperty:
+		return e.checkPropertyPresence(node, result)
+	case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray:
+		return ErrInvalidOperator // Invalid node types for PR operator
+	default:
+		return ErrInvalidOperator
+	}
+}
+
+// checkIdentifierPresence checks if a simple identifier exists in the context.
+func (e *Evaluator) checkIdentifierPresence(node *ASTNode, result *EvalResult) error {
+	_, exists := e.context[node.Left.Value.StrValue]
+	result.Type = ValueBoolean
+	result.Bool = exists
+	result.IsValid = true
+
+	return nil
+}
+
+// checkPropertyPresence checks if a nested property exists in the context.
+func (e *Evaluator) checkPropertyPresence(node *ASTNode, result *EvalResult) error {
+	current := e.context
+
+	for _, child := range node.Left.Children {
+		key := child.Value.StrValue
+
+		currentValue, exists := current[key]
+		if !exists {
+			e.setPresenceResult(result, false)
+			return nil
+		}
+
+		if child == node.Left.Children[len(node.Left.Children)-1] {
+			e.setPresenceResult(result, true)
+			return nil
+		}
+
+		if nextMap, isMap := currentValue.(map[string]any); isMap {
+			current = nextMap
+		} else {
+			e.setPresenceResult(result, false)
+			return nil
+		}
+	}
+
+	return ErrInvalidOperator // Should not reach here
+}
+
+// setPresenceResult sets the result for presence check operations.
+func (e *Evaluator) setPresenceResult(result *EvalResult, exists bool) {
+	result.Type = ValueBoolean
+	result.Bool = exists
+	result.IsValid = true
+}
+
+// evaluateLogicalAnd handles the AND logical operator with short-circuit evaluation.
+func (e *Evaluator) evaluateLogicalAnd(node *ASTNode, result *EvalResult) error {
+	var leftResult EvalResult
+
+	err := e.evaluateNode(node.Left, &leftResult)
+	if err != nil {
+		return err
+	}
+
+	if !e.toBool(&leftResult) {
+		result.Type = ValueBoolean
+		result.Bool = false
+		result.IsValid = true
+
+		return nil
+	}
+
+	var rightResult EvalResult
+
+	err = e.evaluateNode(node.Right, &rightResult)
+	if err != nil {
+		return err
+	}
+
+	result.Type = ValueBoolean
+	result.Bool = e.toBool(&rightResult)
+	result.IsValid = true
+
+	return nil
+}
+
+// evaluateLogicalOr handles the OR logical operator with short-circuit evaluation.
+func (e *Evaluator) evaluateLogicalOr(node *ASTNode, result *EvalResult) error {
+	var leftResult EvalResult
+
+	err := e.evaluateNode(node.Left, &leftResult)
+	if err != nil {
+		return err
+	}
+
+	if e.toBool(&leftResult) {
+		result.Type = ValueBoolean
+		result.Bool = true
+		result.IsValid = true
+
+		return nil
+	}
+
+	var rightResult EvalResult
+
+	err = e.evaluateNode(node.Right, &rightResult)
+	if err != nil {
+		return err
+	}
+
+	result.Type = ValueBoolean
+	result.Bool = e.toBool(&rightResult)
+	result.IsValid = true
+
+	return nil
+}
+
+// evaluateComparisonOperator handles all comparison operators.
+func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, result *EvalResult) error {
+	var leftResult, rightResult EvalResult
+
+	err := e.evaluateNode(node.Left, &leftResult)
+	if err != nil {
+		return err
+	}
+
+	err = e.evaluateNode(node.Right, &rightResult)
+	if err != nil {
+		return err
+	}
+
+	result.Type = ValueBoolean
+	result.IsValid = true
+
+	// If either operand is invalid (missing attribute), comparison is false
+	if !leftResult.IsValid || !rightResult.IsValid {
+		result.Bool = false
+		return nil
+	}
+
+	return e.performComparison(node.Operator, &leftResult, &rightResult, result)
+}
+
+// performComparison executes the specific comparison operation.
+func (e *Evaluator) performComparison(
+	operator TokenType,
+	left, right *EvalResult,
+	result *EvalResult,
+) error {
+	switch operator {
+	case EQ, EQUALS:
+		result.Bool = e.compareEqual(left, right)
+	case NE, NOT_EQUALS:
+		result.Bool = !e.compareEqual(left, right)
+	case LT:
+		result.Bool = e.compareNumbers(left, right, func(a, b float64) bool { return a < b })
+	case GT:
+		result.Bool = e.compareNumbers(left, right, func(a, b float64) bool { return a > b })
+	case LE:
+		result.Bool = e.compareNumbers(left, right, func(a, b float64) bool { return a <= b })
+	case GE:
+		result.Bool = e.compareNumbers(left, right, func(a, b float64) bool { return a >= b })
+	case CO:
+		result.Bool = e.stringContains(left, right)
+	case SW:
+		result.Bool = e.stringStartsWith(left, right)
+	case EW:
+		result.Bool = e.stringEndsWith(left, right)
+	case IN:
+		result.Bool = e.membershipCheck(left, right)
+	case DQ:
+		result.Bool = e.compareDateTimes(
+			left,
+			right,
+			func(a, b time.Time) bool { return a.Equal(b) },
+		)
+	case DN:
+		result.Bool = !e.compareDateTimes(
+			left,
+			right,
+			func(a, b time.Time) bool { return a.Equal(b) },
+		)
+	case BE:
+		result.Bool = e.compareDateTimes(
+			left,
+			right,
+			func(a, b time.Time) bool { return a.Before(b) },
+		)
+	case BQ:
+		result.Bool = e.compareDateTimes(
+			left,
+			right,
+			func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
+		)
+	case AF:
+		result.Bool = e.compareDateTimes(
+			left,
+			right,
+			func(a, b time.Time) bool { return a.After(b) },
+		)
+	case AQ:
+		result.Bool = e.compareDateTimes(
+			left,
+			right,
+			func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
+		)
+	case EOF,
+		IDENTIFIER,
+		STRING,
+		NUMBER,
+		BOOLEAN,
+		ARRAY_START,
+		ARRAY_END,
+		PAREN_OPEN,
+		PAREN_CLOSE,
+		DOT,
+		COMMA,
+		PR,
+		AND,
+		OR,
+		NOT:
+		result.IsValid = false
+		return ErrInvalidOperator
+	default:
+		result.IsValid = false
+		return ErrInvalidOperator
+	}
+
+	return nil
 }
 
 func (e *Evaluator) setResultFromAny(result *EvalResult, value any) {
@@ -733,7 +838,10 @@ func (e *Evaluator) parseDateTime(result *EvalResult) (time.Time, bool) {
 }
 
 // compareDateTimes compares two datetime values using the provided comparison function.
-func (e *Evaluator) compareDateTimes(left, right *EvalResult, op func(time.Time, time.Time) bool) bool {
+func (e *Evaluator) compareDateTimes(
+	left, right *EvalResult,
+	op func(time.Time, time.Time) bool,
+) bool {
 	leftTime, leftOk := e.parseDateTime(left)
 	if !leftOk {
 		return false
