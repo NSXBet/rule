@@ -2,6 +2,7 @@ package test
 
 /* ---------- Complex Logical Combinations ---------- */
 
+//nolint:gochecknoglobals // Test data
 var ComplexLogicalTests = []TestCase{
 	// Multiple levels of nesting
 	{"complex_nested_logic", "((a.x eq b.y) and (c.z gt d.w)) or ((e.f co g.h) and (i.j in k.l))", map[string]any{
@@ -41,6 +42,7 @@ var ComplexLogicalTests = []TestCase{
 
 /* ---------- Real-world Scenarios ---------- */
 
+//nolint:gochecknoglobals // Test data
 var RealWorldTests = []TestCase{
 	// User permissions
 	{
@@ -120,6 +122,7 @@ var RealWorldTests = []TestCase{
 
 /* ---------- Error & Boundary Cases ---------- */
 
+//nolint:gochecknoglobals // Test data
 var ErrorBoundaryTests = []TestCase{
 	// Missing nested attributes should return false (not error)
 	{"missing_nested_left", "missing.attr eq 10", map[string]any{}, false},
@@ -160,6 +163,7 @@ var ErrorBoundaryTests = []TestCase{
 
 /* ---------- Complex Nested Logic ---------- */
 
+//nolint:gochecknoglobals // Test data
 var ComplexNestedLogicTests = []TestCase{
 	// Deeply nested logical expressions
 	{
@@ -196,6 +200,7 @@ var ComplexNestedLogicTests = []TestCase{
 
 /* ---------- Real-world Edge Cases ---------- */
 
+//nolint:gochecknoglobals // Test data
 var RealWorldEdgeTests = []TestCase{
 	// JSON-like nested structures (no array indexing)
 	{"json_like_structure", `response.data.status eq "success" and response.data.count gt 0`, map[string]any{

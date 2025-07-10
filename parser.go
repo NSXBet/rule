@@ -279,6 +279,37 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 
 				p.advance()
 
+			case EOF,
+				IDENTIFIER,
+				ARRAY_START,
+				ARRAY_END,
+				PAREN_OPEN,
+				PAREN_CLOSE,
+				DOT,
+				COMMA,
+				EQ,
+				NE,
+				LT,
+				GT,
+				LE,
+				GE,
+				CO,
+				SW,
+				EW,
+				IN,
+				PR,
+				DQ,
+				DN,
+				BE,
+				BQ,
+				AF,
+				AQ,
+				AND,
+				OR,
+				NOT,
+				EQUALS,
+				NOT_EQUALS:
+				return nil, fmt.Errorf("unexpected token in array: %s", p.curToken.Type)
 			default:
 				return nil, fmt.Errorf("unexpected token in array: %s", p.curToken.Type)
 			}
@@ -324,6 +355,21 @@ func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 	switch tokenType {
 	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, PR, DQ, DN, BE, BQ, AF, AQ, EQUALS, NOT_EQUALS:
 		return true
+	case EOF,
+		IDENTIFIER,
+		STRING,
+		NUMBER,
+		BOOLEAN,
+		ARRAY_START,
+		ARRAY_END,
+		PAREN_OPEN,
+		PAREN_CLOSE,
+		DOT,
+		COMMA,
+		AND,
+		OR,
+		NOT:
+		return false
 	default:
 		return false
 	}

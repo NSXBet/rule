@@ -2,6 +2,7 @@ package test
 
 /* ---------- Whitespace and Formatting Edge Cases ---------- */
 
+//nolint:gochecknoglobals // Test data
 var WhitespaceTests = []TestCase{
 	// Extra spaces
 	{"extra_spaces", "  x    eq    10   ", map[string]any{"x": 10}, true},
@@ -25,6 +26,7 @@ var WhitespaceTests = []TestCase{
 
 /* ---------- Advanced Operator Precedence ---------- */
 
+//nolint:gochecknoglobals // Test data
 var AdvancedPrecedenceTests = []TestCase{
 	// Complex precedence without parentheses
 	{"precedence_and_or", "a eq 1 and b eq 2 or c eq 3", map[string]any{"a": 1, "b": 2, "c": 4}, true},
@@ -59,6 +61,7 @@ var AdvancedPrecedenceTests = []TestCase{
 
 /* ---------- Type Coercion Stress Tests ---------- */
 
+//nolint:gochecknoglobals // Test data
 var TypeCoercionStressTests = []TestCase{
 	// Numeric precision edge cases
 	{"float_precision", "x eq 0.1000000000000001", map[string]any{"x": 0.1000000000000001}, true},
@@ -91,6 +94,7 @@ var TypeCoercionStressTests = []TestCase{
 
 /* ---------- Performance Stress Tests ---------- */
 
+//nolint:gochecknoglobals // Test data
 var PerformanceStressTests = []TestCase{
 	// Long chains of operations
 	{
@@ -157,6 +161,7 @@ var PerformanceStressTests = []TestCase{
 
 /* ---------- Boundary Conditions ---------- */
 
+//nolint:gochecknoglobals // Test data
 var BoundaryConditionTests = []TestCase{
 	// Empty contexts
 	{"empty_context_missing", "x eq 10", map[string]any{}, false},
@@ -181,6 +186,7 @@ var BoundaryConditionTests = []TestCase{
 
 /* ---------- Special Numeric Values ---------- */
 
+//nolint:gochecknoglobals // Test data
 var SpecialNumericTests = []TestCase{
 	// Very small numbers (using regular notation)
 	{"very_small_positive", "x gt 0", map[string]any{"x": 1e-100}, true},

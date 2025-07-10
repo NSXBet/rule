@@ -2,6 +2,7 @@ package test
 
 /* ---------- Attribute-to-attribute (flat) ---------- */
 
+//nolint:gochecknoglobals // Test data
 var PropCompareTests = []TestCase{
 	// eq / ne on numbers
 	{"prop_eq_int_true", "x eq y", map[string]any{"x": 5, "y": 5}, true},
@@ -45,6 +46,7 @@ var PropCompareTests = []TestCase{
 
 /* ---------- Nested-attribute comparisons ---------- */
 
+//nolint:gochecknoglobals // Test data
 var NestedPropTests = []TestCase{
 	// nested vs nested equality
 	{"nested_eq_true", "x.y eq z.w", map[string]any{

@@ -10,6 +10,7 @@ type TestCase struct {
 
 /* ---------- Equality & inequality ---------- */
 
+//nolint:gochecknoglobals // Test data
 var EqualTests = []TestCase{
 	// ints
 	{"eq_int_true", "x eq 1", map[string]any{"x": 1}, true},
@@ -44,6 +45,7 @@ var EqualTests = []TestCase{
 
 /* ---------- Relational (<, >, <=, >=) ---------- */
 
+//nolint:gochecknoglobals // Test data
 var RelationalTests = []TestCase{
 	{"lt_true", "score lt 10", map[string]any{"score": 5}, true},
 	{"lt_false", "score lt 10", map[string]any{"score": 10}, false},
@@ -57,6 +59,7 @@ var RelationalTests = []TestCase{
 
 /* ---------- String operations (co, sw, ew) ---------- */
 
+//nolint:gochecknoglobals // Test data
 var StringOpTests = []TestCase{
 	{"co_true", `city co "York"`, map[string]any{"city": "New York"}, true},
 	{"co_false", `city co "York"`, map[string]any{"city": "Boston"}, false},
@@ -68,6 +71,7 @@ var StringOpTests = []TestCase{
 
 /* ---------- Membership (in) ---------- */
 
+//nolint:gochecknoglobals // Test data
 var InTests = []TestCase{
 	{"in_int_true", "x in [1,2,3]", map[string]any{"x": 2}, true},
 	{"in_int_false", "x in [1,2,3]", map[string]any{"x": 4}, false},
@@ -87,6 +91,7 @@ var InTests = []TestCase{
 
 /* ---------- Presence (pr) ---------- */
 
+//nolint:gochecknoglobals // Test data
 var PresenceTests = []TestCase{
 	{"pr_present", "betaUser pr", map[string]any{"betaUser": true}, true},
 	{"pr_missing", "betaUser pr", map[string]any{}, false},
@@ -94,6 +99,7 @@ var PresenceTests = []TestCase{
 
 /* ---------- NOT, AND, OR, nesting ---------- */
 
+//nolint:gochecknoglobals // Test data
 var LogicalTests = []TestCase{
 	{"not_true", "not (x eq 1)", map[string]any{"x": 2}, true},
 	{"not_false", "not (x eq 1)", map[string]any{"x": 1}, false},

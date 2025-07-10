@@ -2,6 +2,7 @@ package test
 
 /* ---------- Complex String Patterns ---------- */
 
+//nolint:gochecknoglobals // Test data
 var ComplexStringPatternTests = []TestCase{
 	// Email-like patterns
 	{

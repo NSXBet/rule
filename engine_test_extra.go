@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// Test Engine functions beyond basic functionality.
+// TestEngineClearCache tests Engine functions beyond basic functionality.
 func TestEngineClearCache(t *testing.T) {
 	engine := NewEngine()
 
@@ -33,7 +33,7 @@ func TestEngineClearCache(t *testing.T) {
 	}
 }
 
-// Test engine AddQuery with parse error.
+// TestEngineAddQueryParseError tests engine AddQuery with parse error.
 func TestEngineAddQueryParseError(t *testing.T) {
 	engine := NewEngine()
 
@@ -44,7 +44,7 @@ func TestEngineAddQueryParseError(t *testing.T) {
 	}
 }
 
-// Test engine CompileRule with error.
+// TestEngineCompileRuleError tests engine CompileRule with error.
 func TestEngineCompileRuleError(t *testing.T) {
 	engine := NewEngine()
 
@@ -55,7 +55,7 @@ func TestEngineCompileRuleError(t *testing.T) {
 	}
 }
 
-// Test engine Evaluate with compilation error.
+// TestEngineEvaluateCompilationError tests engine Evaluate with compilation error.
 func TestEngineEvaluateCompilationError(t *testing.T) {
 	engine := NewEngine()
 
@@ -66,7 +66,7 @@ func TestEngineEvaluateCompilationError(t *testing.T) {
 	}
 }
 
-// Test engine with already compiled rule.
+// TestEngineAddQueryAlreadyCompiled tests engine with already compiled rule.
 func TestEngineAddQueryAlreadyCompiled(t *testing.T) {
 	engine := NewEngine()
 
@@ -93,7 +93,7 @@ func TestEngineAddQueryAlreadyCompiled(t *testing.T) {
 	}
 }
 
-// Test engine with CompileRule existing rule.
+// TestEngineCompileRuleExisting tests engine with CompileRule existing rule.
 func TestEngineCompileRuleExisting(t *testing.T) {
 	engine := NewEngine()
 
@@ -115,7 +115,7 @@ func TestEngineCompileRuleExisting(t *testing.T) {
 	}
 }
 
-// Test engine hash function.
+// TestEngineHash tests engine hash function.
 func TestEngineHash(t *testing.T) {
 	// Test that hash produces different values for different strings
 	hash1 := hash("rule1")

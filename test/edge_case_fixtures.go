@@ -7,6 +7,7 @@ import (
 
 /* ---------- Edge Cases & Advanced Scenarios ---------- */
 
+//nolint:gochecknoglobals // Test data
 var EdgeCaseTests = []TestCase{
 	// Deep nesting (3+ levels)
 	{"deep_nested_eq", "a.b.c eq d.e.f", map[string]any{
@@ -62,6 +63,7 @@ var EdgeCaseTests = []TestCase{
 
 /* ---------- String Operation Edge Cases ---------- */
 
+//nolint:gochecknoglobals // Test data
 var StringEdgeCaseTests = []TestCase{
 	// String operations between properties
 	{"prop_contains_nested", "user.email co domain.suffix", map[string]any{
@@ -90,6 +92,7 @@ var StringEdgeCaseTests = []TestCase{
 
 /* ---------- Numeric Edge Cases ---------- */
 
+//nolint:gochecknoglobals // Test data
 var NumericEdgeCaseTests = []TestCase{
 	// Large numbers
 	{"large_int_eq", "x eq y", map[string]any{
@@ -113,6 +116,7 @@ var NumericEdgeCaseTests = []TestCase{
 
 /* ---------- Array/Membership Edge Cases ---------- */
 
+//nolint:gochecknoglobals // Test data
 var ArrayEdgeCaseTests = []TestCase{
 	// Mixed type arrays
 	{"mixed_array_string", `x in ["1", "42", "3.14"]`, map[string]any{
@@ -146,6 +150,7 @@ var ArrayEdgeCaseTests = []TestCase{
 
 /* ---------- Presence (pr) Edge Cases ---------- */
 
+//nolint:gochecknoglobals // Test data
 var PresenceEdgeCaseTests = []TestCase{
 	// Nested presence
 	{"nested_presence_true", "user.profile pr", map[string]any{
@@ -171,6 +176,7 @@ var PresenceEdgeCaseTests = []TestCase{
 
 /* ---------- Extreme Values ---------- */
 
+//nolint:gochecknoglobals // Test data
 var ExtremeValueTests = []TestCase{
 	// Very long strings
 	{"long_string_eq", `x eq "` + strings.Repeat("a", 1000) + `"`, map[string]any{

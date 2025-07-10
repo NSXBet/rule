@@ -214,6 +214,8 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 					return nil
 				}
 			}
+		case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray:
+			return ErrInvalidOperator // Invalid node types for PR operator
 		}
 
 		return ErrInvalidOperator
@@ -281,7 +283,7 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 
 		return nil
 
-	default:
+	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ:
 		// Comparison operations
 		err := e.evaluateNode(node.Left, &leftResult)
 		if err != nil {
@@ -362,6 +364,14 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 		}
 
 		return nil
+
+	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, PR, NOT:
+		result.IsValid = false
+		return ErrInvalidOperator // These are not binary operators
+
+	default:
+		result.IsValid = false
+		return ErrInvalidOperator
 	}
 }
 
@@ -372,64 +382,12 @@ func (e *Evaluator) setResultFromAny(result *EvalResult, value any) {
 	case bool:
 		result.Type = ValueBoolean
 		result.Bool = v
-	case int:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case int8:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case int16:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case int32:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case int64:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = v
-		result.IsInt = true
-	case uint:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case uint8:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case uint16:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case uint32:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case uint64:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IntValue = int64(v)
-		result.IsInt = true
-	case float32:
-		result.Type = ValueNumber
-		result.Num = float64(v)
-		result.IsInt = false
-	case float64:
-		result.Type = ValueNumber
-		result.Num = v
-		result.IsInt = false
+	case int, int8, int16, int32, int64:
+		e.setIntegerResult(result, v)
+	case uint, uint8, uint16, uint32, uint64:
+		e.setUintegerResult(result, v)
+	case float32, float64:
+		e.setFloatResult(result, v)
 	case string:
 		result.Type = ValueString
 		result.Str = v
@@ -441,6 +399,64 @@ func (e *Evaluator) setResultFromAny(result *EvalResult, value any) {
 		// Fallback to string representation
 		result.Type = ValueString
 		result.Str = e.toString(value)
+	}
+}
+
+func (e *Evaluator) setIntegerResult(result *EvalResult, value any) {
+	result.Type = ValueNumber
+	result.IsInt = true
+
+	switch v := value.(type) {
+	case int:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case int8:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case int16:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case int32:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case int64:
+		result.Num = float64(v)
+		result.IntValue = v
+	}
+}
+
+func (e *Evaluator) setUintegerResult(result *EvalResult, value any) {
+	result.Type = ValueNumber
+	result.IsInt = true
+
+	switch v := value.(type) {
+	case uint:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case uint8:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case uint16:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case uint32:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	case uint64:
+		result.Num = float64(v)
+		result.IntValue = int64(v)
+	}
+}
+
+func (e *Evaluator) setFloatResult(result *EvalResult, value any) {
+	result.Type = ValueNumber
+	result.IsInt = false
+
+	switch v := value.(type) {
+	case float32:
+		result.Num = float64(v)
+	case float64:
+		result.Num = v
 	}
 }
 
@@ -459,6 +475,8 @@ func (e *Evaluator) compareEqual(left, right *EvalResult) bool {
 			return left.Num == right.Num
 		case ValueString:
 			return left.Str == right.Str
+		case ValueArray, ValueIdentifier:
+			return false // Arrays and identifiers cannot be compared
 		}
 	}
 
@@ -495,6 +513,8 @@ func (e *Evaluator) compareEqualStrict(left, right *EvalResult) bool {
 		return left.Num == right.Num
 	case ValueString:
 		return left.Str == right.Str
+	case ValueArray, ValueIdentifier:
+		return false // Arrays and identifiers cannot be compared in strict mode
 	}
 
 	return false
@@ -526,11 +546,13 @@ func (e *Evaluator) compareNumbers(left, right *EvalResult, op func(float64, flo
 func (e *Evaluator) compareInt64(left, right int64, op func(float64, float64) bool) bool {
 	if left < right {
 		return op(-1, 0)
-	} else if left > right {
-		return op(1, 0)
-	} else {
-		return op(0, 0)
 	}
+
+	if left > right {
+		return op(1, 0)
+	}
+
+	return op(0, 0)
 }
 
 func (e *Evaluator) stringContains(left, right *EvalResult) bool {
@@ -605,6 +627,9 @@ func (e *Evaluator) setResultFromValue(result *EvalResult, value *Value) {
 		result.Bool = value.BoolValue
 	case ValueArray:
 		result.Arr = value.ArrValue
+	case ValueIdentifier:
+		// Identifiers should not be converted to results
+		result.IsValid = false
 	}
 }
 
@@ -622,6 +647,8 @@ func (e *Evaluator) toBool(result *EvalResult) bool {
 		return result.Str != ""
 	case ValueArray:
 		return len(result.Arr) > 0
+	case ValueIdentifier:
+		return false // Identifiers are not boolean
 	default:
 		return false
 	}
@@ -643,17 +670,13 @@ func (e *Evaluator) resultToString(result *EvalResult) string {
 		}
 
 		return "false"
+	case ValueArray:
+		return "" // Arrays cannot be converted to string
+	case ValueIdentifier:
+		return "" // Identifiers cannot be converted to string
 	default:
 		return ""
 	}
-}
-
-func (e *Evaluator) toNumberFromString(s string) (float64, bool) {
-	if num, err := strconv.ParseFloat(s, 64); err == nil {
-		return num, true
-	}
-
-	return 0, false
 }
 
 func (e *Evaluator) toString(value any) string {
@@ -694,6 +717,8 @@ func (e *Evaluator) parseDateTime(result *EvalResult) (time.Time, bool) {
 		}
 		// Unix timestamp as float (truncate to seconds)
 		return time.Unix(int64(result.Num), 0).UTC(), true
+	case ValueBoolean, ValueArray, ValueIdentifier:
+		return time.Time{}, false // These types cannot be parsed as datetime
 	default:
 		return time.Time{}, false
 	}
