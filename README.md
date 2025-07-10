@@ -765,9 +765,7 @@ Features that we've added beyond nikunjy/rules capabilities:
 | **DateTime Operators** | ✅ `dq`, `dn`, `be`, `bq`, `af`, `aq` | ❌ Not available | 🟡 **NSXBet/rule Extension** | Native datetime comparison with RFC3339 and Unix timestamps |
 | **Property-to-Property** | ✅ `user.age eq threshold.min` | ❌ Not supported | 🟡 **NSXBet/rule Extension** | Compare any two properties directly |
 | **Nested Property-to-Property** | ✅ `config.limits.max eq settings.ceiling` | ❌ Not supported | 🟡 **NSXBet/rule Extension** | Deep nested property comparisons |
-| **Performance** | ⚡ **25-144x faster** | ✅ Good | 🟡 **Enhanced** | Sub-100ns evaluation, zero allocations |
 | **rule.D Type Alias** | ✅ Clean API | ✅ `map[string]interface{}` | 🟡 **Enhanced** | Cleaner syntax: `rule.D{...}` |
-| **Memory Usage** | ✅ **0 allocs/op** | ❌ High allocation | 🟡 **Enhanced** | Zero-allocation evaluation |
 
 ### 📊 Migration Compatibility
 
