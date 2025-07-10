@@ -1,6 +1,6 @@
 package test
 
-import "github.com/NSXBet/rule-engine"
+import "github.com/NSXBet/rule"
 
 // Case bundles one rule, its context, and the expected boolean result.
 type Case struct {

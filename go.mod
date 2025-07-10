@@ -1,4 +1,4 @@
-module github.com/NSXBet/rule-engine
+module github.com/NSXBet/rule
 
 go 1.24.3
 

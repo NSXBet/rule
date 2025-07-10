@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 )
 
 // BasicUsageExample demonstrates simple rule evaluation
@@ -70,11 +70,11 @@ func TypeSafetyExample() {
 	engine := rule.NewEngine()
 
 	context := rule.D{
-		"count":  42,
-		"flag":   true,
-		"text":   "42",
-		"score":  95.5,
-		"items":  []any{"apple", "banana", "cherry"},
+		"count": 42,
+		"flag":  true,
+		"text":  "42",
+		"score": 95.5,
+		"items": []any{"apple", "banana", "cherry"},
 	}
 
 	// Type safety rules
@@ -106,7 +106,7 @@ func TypeSafetyExample() {
 		if result == r.expected {
 			status = "✅"
 		}
-		fmt.Printf("%s %s: %t (expected %t) - %s\n", 
+		fmt.Printf("%s %s: %t (expected %t) - %s\n",
 			status, r.name, result, r.expected, r.note)
 	}
 

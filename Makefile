@@ -1,4 +1,4 @@
-# Makefile for rule-engine project
+# Makefile for rule project
 .PHONY: help test bench test-verbose test-coverage lint format clean install-tools mod-tidy build run-tests
 
 # Default target

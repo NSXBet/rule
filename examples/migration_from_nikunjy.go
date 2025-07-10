@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 	ruleslib "github.com/nikunjy/rules"
 )
 
@@ -122,7 +122,7 @@ fmt.Printf("Result: %t\\n", result)`)
 
 	fmt.Println("\nAFTER (our library):")
 	fmt.Println("--------------------")
-	fmt.Println(`import "github.com/NSXBet/rule-engine"
+	fmt.Println(`import "github.com/NSXBet/rule"
 
 // Create engine instance (enables caching)
 engine := rule.NewEngine()

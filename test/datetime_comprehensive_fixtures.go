@@ -1,6 +1,6 @@
 package test
 
-import "github.com/NSXBet/rule-engine"
+import "github.com/NSXBet/rule"
 
 // DateTimeComprehensiveTests contains exhaustive datetime operator test cases.
 //

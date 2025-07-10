@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 )
 
 /* ---------- Edge Cases & Advanced Scenarios ---------- */
@@ -87,9 +87,9 @@ var StringEdgeCaseTests = []Case{
 	{"empty_string_endswith", `x ew ""`, rule.D{"x": "hello"}, true},
 	{"contains_empty_string", `"" co "test"`, rule.D{}, false},
 
-	// Case sensitivity
-	{"case_sensitive_eq", `x eq "test"`, rule.D{"x": "Test"}, false},
-	{"case_sensitive_contains", `x co "hello"`, rule.D{"x": "Hello World"}, false},
+	// Case insensitive (compatible with nikunjy/rules)
+	{"case_insensitive_eq", `x eq "test"`, rule.D{"x": "Test"}, true},
+	{"case_insensitive_contains", `x co "hello"`, rule.D{"x": "Hello World"}, true},
 }
 
 /* ---------- Numeric Edge Cases ---------- */

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 )
 
 // Customer represents an e-commerce customer
@@ -194,7 +194,7 @@ func EcommerceEligibilityExample() {
 	}
 
 	fmt.Printf("📊 Eligibility Summary:\n")
-	fmt.Printf("   Passed: %d/%d rules (%.1f%%)\n", 
+	fmt.Printf("   Passed: %d/%d rules (%.1f%%)\n",
 		eligibleCount, totalRules, float64(eligibleCount)/float64(totalRules)*100)
 
 	if eligibleCount == totalRules {
@@ -224,9 +224,9 @@ func DynamicPricingExample() {
 			"rating":     4.5,
 		},
 		"customer": rule.D{
-			"tier":           "gold",
-			"loyalty_years":  3,
-			"last_purchase":  15, // days ago
+			"tier":          "gold",
+			"loyalty_years": 3,
+			"last_purchase": 15, // days ago
 		},
 		"market": rule.D{
 			"demand":     "high",
@@ -237,9 +237,9 @@ func DynamicPricingExample() {
 
 	// Pricing rules (these would calculate discounts/markups)
 	pricingRules := []struct {
-		name      string
-		rule      string
-		modifier  string
+		name     string
+		rule     string
+		modifier string
 	}{
 		{
 			"Loyalty Discount",

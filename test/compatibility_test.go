@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 	ruleslib "github.com/nikunjy/rules"
 )
 
@@ -122,7 +122,7 @@ func TestBasicCompatibility(t *testing.T) {
 			Notes:    "Integer 42 should equal float 42.0",
 		},
 		{
-			Name:     "Float vs Int equality", 
+			Name:     "Float vs Int equality",
 			Rule:     `value eq 42`,
 			Context:  rule.D{"value": 42.0},
 			Expected: true,

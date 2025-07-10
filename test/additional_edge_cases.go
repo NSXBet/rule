@@ -1,6 +1,6 @@
 package test
 
-import "github.com/NSXBet/rule-engine"
+import "github.com/NSXBet/rule"
 
 // AdditionalEdgeCaseTests contains additional edge case tests for comprehensive coverage.
 //

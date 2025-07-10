@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 	ruleslib "github.com/nikunjy/rules"
 )
 
@@ -88,7 +88,7 @@ func compatibilityDemo() {
 
 	// Test with nikunjy/rules
 	oldResult, oldErr := ruleslib.Evaluate(testRule, context)
-	
+
 	// Test with our library
 	ourEngine := rule.NewEngine()
 	newResult, newErr := ourEngine.Evaluate(testRule, ourContext)
@@ -112,21 +112,21 @@ func datetimeDemo() {
 	oneHourAgo := now.Add(-1 * time.Hour)
 
 	context := rule.D{
-		"created_at": now,                          // time.Time
-		"updated_at": now.Format(time.RFC3339),     // RFC3339 string
+		"created_at": now,                            // time.Time
+		"updated_at": now.Format(time.RFC3339),       // RFC3339 string
 		"deadline":   now.Add(24 * time.Hour).Unix(), // Unix timestamp
 		"start_time": oneHourAgo.Format(time.RFC3339),
 	}
 
 	datetimeRules := []string{
-		`created_at dq updated_at`,               // DateTime equal
-		`start_time be created_at`,               // Before
-		`deadline af created_at`,                 // After
-		`created_at aq start_time`,               // After or equal
+		`created_at dq updated_at`, // DateTime equal
+		`start_time be created_at`, // Before
+		`deadline af created_at`,   // After
+		`created_at aq start_time`, // After or equal
 	}
 
 	fmt.Printf("Current time: %s\n", now.Format(time.RFC3339))
-	
+
 	for _, r := range datetimeRules {
 		result, err := engine.Evaluate(r, context)
 		if err != nil {
@@ -160,7 +160,7 @@ func performanceDemo() {
 	}
 
 	context := rule.D{
-		"user": rule.D{"role": "admin"},
+		"user":    rule.D{"role": "admin"},
 		"account": rule.D{"balance": 1500.0},
 	}
 
@@ -172,7 +172,7 @@ func performanceDemo() {
 
 	fmt.Println("\n📊 Performance benefits:")
 	fmt.Println("   • 25-144x faster than nikunjy/rules")
-	fmt.Println("   • 0 allocations during evaluation") 
+	fmt.Println("   • 0 allocations during evaluation")
 	fmt.Println("   • Sub-100ns evaluation times")
 	fmt.Println("   • Automatic query caching")
 }

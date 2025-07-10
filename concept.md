@@ -1,4 +1,4 @@
-# rule-engine
+# rule
 
 This rule engine must pass the test/fixtures.go set of tests. It should evaluate rules in the form of "x eq 10 and y gt
 20".

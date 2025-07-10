@@ -592,7 +592,7 @@ func (e *Evaluator) compareEqual(left, right *EvalResult) bool {
 
 			return left.Num == right.Num
 		case ValueString:
-			return left.Str == right.Str
+			return e.equalIgnoreCase(left.Str, right.Str)
 		case ValueArray, ValueIdentifier:
 			return false // Arrays and identifiers cannot be compared
 		}
@@ -630,7 +630,7 @@ func (e *Evaluator) compareEqualStrict(left, right *EvalResult) bool {
 
 		return left.Num == right.Num
 	case ValueString:
-		return left.Str == right.Str
+		return e.equalIgnoreCase(left.Str, right.Str)
 	case ValueArray, ValueIdentifier:
 		return false // Arrays and identifiers cannot be compared in strict mode
 	}
@@ -677,21 +677,21 @@ func (e *Evaluator) stringContains(left, right *EvalResult) bool {
 	leftStr := e.resultToString(left)
 	rightStr := e.resultToString(right)
 
-	return strings.Contains(leftStr, rightStr)
+	return e.containsIgnoreCase(leftStr, rightStr)
 }
 
 func (e *Evaluator) stringStartsWith(left, right *EvalResult) bool {
 	leftStr := e.resultToString(left)
 	rightStr := e.resultToString(right)
 
-	return strings.HasPrefix(leftStr, rightStr)
+	return e.hasPrefixIgnoreCase(leftStr, rightStr)
 }
 
 func (e *Evaluator) stringEndsWith(left, right *EvalResult) bool {
 	leftStr := e.resultToString(left)
 	rightStr := e.resultToString(right)
 
-	return strings.HasSuffix(leftStr, rightStr)
+	return e.hasSuffixIgnoreCase(leftStr, rightStr)
 }
 
 func (e *Evaluator) membershipCheck(left, right *EvalResult) bool {
@@ -863,4 +863,75 @@ func (e *Evaluator) compareDateTimes(
 	}
 
 	return op(leftTime, rightTime)
+}
+
+// Zero-allocation case-insensitive string comparison functions
+// These maintain compatibility with nikunjy/rules while avoiding allocations
+
+// equalIgnoreCase compares two strings case-insensitively without allocations
+func (e *Evaluator) equalIgnoreCase(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if toLowerByte(a[i]) != toLowerByte(b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// containsIgnoreCase checks if a contains b case-insensitively without allocations
+func (e *Evaluator) containsIgnoreCase(a, b string) bool {
+	if len(b) == 0 {
+		return true
+	}
+	if len(b) > len(a) {
+		return false
+	}
+
+	for i := 0; i <= len(a)-len(b); i++ {
+		if e.equalIgnoreCaseSubstring(a, i, b) {
+			return true
+		}
+	}
+	return false
+}
+
+// hasPrefixIgnoreCase checks if a starts with b case-insensitively without allocations
+func (e *Evaluator) hasPrefixIgnoreCase(a, b string) bool {
+	if len(b) > len(a) {
+		return false
+	}
+	return e.equalIgnoreCaseSubstring(a, 0, b)
+}
+
+// hasSuffixIgnoreCase checks if a ends with b case-insensitively without allocations
+func (e *Evaluator) hasSuffixIgnoreCase(a, b string) bool {
+	if len(b) > len(a) {
+		return false
+	}
+	return e.equalIgnoreCaseSubstring(a, len(a)-len(b), b)
+}
+
+// equalIgnoreCaseSubstring compares substring of a starting at offset with b
+func (e *Evaluator) equalIgnoreCaseSubstring(a string, offset int, b string) bool {
+	if offset+len(b) > len(a) {
+		return false
+	}
+	for i := 0; i < len(b); i++ {
+		if toLowerByte(a[offset+i]) != toLowerByte(b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// toLowerByte converts ASCII uppercase to lowercase without allocation
+// Only handles ASCII characters (A-Z), non-ASCII bytes are returned unchanged
+func toLowerByte(b byte) byte {
+	if b >= 'A' && b <= 'Z' {
+		return b + 32
+	}
+	return b
 }

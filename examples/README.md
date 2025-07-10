@@ -123,7 +123,7 @@ See `../test/compatibility_test.go` for the automated test suite.
 
 The examples require:
 - Go 1.21+
-- github.com/NSXBet/rule-engine
+- github.com/NSXBet/rule
 - github.com/nikunjy/rules (for migration examples)
 
 ## Running Examples
@@ -166,4 +166,4 @@ After reviewing these examples:
 
 **Built with ❤️ for the Go community**
 
-[Report Issues](https://github.com/NSXBet/rule-engine/issues) | [Contribute](https://github.com/NSXBet/rule-engine/pulls) | [Documentation](../README.md)
+[Report Issues](https://github.com/NSXBet/rule/issues) | [Contribute](https://github.com/NSXBet/rule/pulls) | [Documentation](../README.md)

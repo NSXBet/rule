@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 )
 
 // DateTimeOperationsExample demonstrates our datetime extensions
@@ -26,22 +26,22 @@ func DateTimeOperationsExample() {
 	// Context with multiple datetime formats
 	context := rule.D{
 		"event": rule.D{
-			"created_at":    now,                                    // time.Time
-			"updated_at":    now.Format(time.RFC3339),              // RFC3339 string
-			"published_at":  now.Unix(),                            // Unix timestamp
-			"started_at":    oneHourAgo.Format(time.RFC3339),       // RFC3339 string
-			"deadline":      oneWeekLater.Unix(),                   // Unix timestamp
-			"last_modified": oneDayAgo,                             // time.Time
+			"created_at":    now,                             // time.Time
+			"updated_at":    now.Format(time.RFC3339),        // RFC3339 string
+			"published_at":  now.Unix(),                      // Unix timestamp
+			"started_at":    oneHourAgo.Format(time.RFC3339), // RFC3339 string
+			"deadline":      oneWeekLater.Unix(),             // Unix timestamp
+			"last_modified": oneDayAgo,                       // time.Time
 		},
 		"user": rule.D{
-			"joined_at":    "2023-01-15T10:30:00Z",                 // RFC3339
-			"last_login":   time.Date(2024, 7, 9, 15, 30, 0, 0, time.UTC), // time.Time
-			"trial_expires": int64(1735689600), // 2025-01-01 00:00:00 UTC
+			"joined_at":     "2023-01-15T10:30:00Z",                        // RFC3339
+			"last_login":    time.Date(2024, 7, 9, 15, 30, 0, 0, time.UTC), // time.Time
+			"trial_expires": int64(1735689600),                             // 2025-01-01 00:00:00 UTC
 		},
 		"subscription": rule.D{
-			"started":  "2024-01-01T00:00:00Z",
-			"expires":  "2024-12-31T23:59:59Z",
-			"renewed":  int64(1704067200), // 2024-01-01 00:00:00 UTC
+			"started": "2024-01-01T00:00:00Z",
+			"expires": "2024-12-31T23:59:59Z",
+			"renewed": int64(1704067200), // 2024-01-01 00:00:00 UTC
 		},
 	}
 
@@ -88,7 +88,7 @@ func DateTimeOperationsExample() {
 		},
 		{
 			"Subscription Active",
-			fmt.Sprintf(`subscription.started be "%s" and subscription.expires af "%s"`, 
+			fmt.Sprintf(`subscription.started be "%s" and subscription.expires af "%s"`,
 				now.Format(time.RFC3339), now.Format(time.RFC3339)),
 			"Check if subscription is currently active",
 		},
@@ -152,33 +152,33 @@ func SchedulingExample() {
 	engine := rule.NewEngine()
 
 	// Business hours and scheduling context
-	now := time.Date(2024, 7, 10, 14, 30, 0, 0, time.UTC) // Wednesday 2:30 PM UTC
-	businessStart := time.Date(2024, 7, 10, 9, 0, 0, 0, time.UTC)   // 9 AM
-	businessEnd := time.Date(2024, 7, 10, 17, 0, 0, 0, time.UTC)    // 5 PM
-	
+	now := time.Date(2024, 7, 10, 14, 30, 0, 0, time.UTC)         // Wednesday 2:30 PM UTC
+	businessStart := time.Date(2024, 7, 10, 9, 0, 0, 0, time.UTC) // 9 AM
+	businessEnd := time.Date(2024, 7, 10, 17, 0, 0, 0, time.UTC)  // 5 PM
+
 	context := rule.D{
 		"meeting": rule.D{
 			"requested_start": "2024-07-10T15:00:00Z", // 3 PM
 			"requested_end":   "2024-07-10T16:00:00Z", // 4 PM
-			"duration":        60, // minutes
+			"duration":        60,                     // minutes
 		},
 		"business_hours": rule.D{
 			"start": businessStart.Unix(),
 			"end":   businessEnd.Unix(),
 		},
 		"employee": rule.D{
-			"timezone":      "UTC",
-			"available_from": "2024-07-10T14:00:00Z", // 2 PM
+			"timezone":        "UTC",
+			"available_from":  "2024-07-10T14:00:00Z", // 2 PM
 			"available_until": "2024-07-10T18:00:00Z", // 6 PM
-			"last_meeting":   "2024-07-10T13:30:00Z", // 1:30 PM
+			"last_meeting":    "2024-07-10T13:30:00Z", // 1:30 PM
 		},
 		"current_time": now.Unix(),
 	}
 
 	// Scheduling validation rules
 	schedulingRules := []struct {
-		name string
-		rule string
+		name        string
+		rule        string
 		description string
 	}{
 		{
@@ -226,10 +226,10 @@ func SchedulingExample() {
 	fmt.Println("Validating meeting schedule:")
 	fmt.Println("----------------------------")
 	fmt.Printf("Current time: %s\n", now.Format(time.RFC3339))
-	fmt.Printf("Requested meeting: %s - %s\n", 
-		context["meeting"].(rule.D)["requested_start"], 
+	fmt.Printf("Requested meeting: %s - %s\n",
+		context["meeting"].(rule.D)["requested_start"],
 		context["meeting"].(rule.D)["requested_end"])
-	fmt.Printf("Business hours: %s - %s\n\n", 
+	fmt.Printf("Business hours: %s - %s\n\n",
 		businessStart.Format("15:04"), businessEnd.Format("15:04"))
 
 	validationsPassed := 0
@@ -255,8 +255,8 @@ func SchedulingExample() {
 	}
 
 	fmt.Printf("📊 Scheduling Validation Summary:\n")
-	fmt.Printf("   Passed: %d/%d validations (%.1f%%)\n", 
-		validationsPassed, totalValidations, 
+	fmt.Printf("   Passed: %d/%d validations (%.1f%%)\n",
+		validationsPassed, totalValidations,
 		float64(validationsPassed)/float64(totalValidations)*100)
 
 	if validationsPassed == totalValidations {

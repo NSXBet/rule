@@ -3,12 +3,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
-	"log"
 
-	"github.com/NSXBet/rule-engine"
+	"github.com/NSXBet/rule"
 	ruleslib "github.com/nikunjy/rules"
 )
 
