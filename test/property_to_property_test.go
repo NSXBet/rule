@@ -281,11 +281,19 @@ func TestPropertyToPropertyDateTimeComparisons(t *testing.T) {
 		{"DateTime simple to nested - simple end after session created", "end_time af session.created_at", true},
 
 		// Nested to nested
-		{"DateTime nested to nested - event start after session created", "event.start_time af session.created_at", true},
+		{
+			"DateTime nested to nested - event start after session created",
+			"event.start_time af session.created_at",
+			true,
+		},
 		{"DateTime nested to nested - session expires before event end", "session.expires_at be event.end_time", true},
 
 		// Deep nested comparisons
-		{"DateTime deep nested - booking start before event start", "booking.schedule.time.start be event.start_time", true},
+		{
+			"DateTime deep nested - booking start before event start",
+			"booking.schedule.time.start be event.start_time",
+			true,
+		},
 		{"DateTime deep nested - booking end after event end", "booking.schedule.time.end af event.end_time", true},
 	}
 
