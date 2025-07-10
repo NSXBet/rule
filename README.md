@@ -206,7 +206,7 @@ engine.Evaluate(`text eq "42"`, context)  // true (string matches string)
 
 ## 🔤 Rule Language
 
-Our rule language is intuitive and powerful! Here are all the supported operators:
+The rule language is intuitive and powerful! Here are all the supported operators:
 
 ### Equality Operators
 
@@ -436,9 +436,9 @@ The cache is bounded and efficient:
 
 ## ⚡ Benchmarks
 
-We believe in **transparency over marketing** 📊. Here are objective performance comparisons to help you choose the right tool:
+This library believes in **transparency over marketing** 📊. Here are objective performance comparisons to help you choose the right tool:
 
-> 💡 **Disclaimer**: We're not trying to discourage anyone from using `nikunjy/rules` or Go templates - they're excellent libraries with different design goals. We're simply offering another option that might benefit your specific use case, especially when ultra-low latency and zero allocations are critical.
+> 💡 **Disclaimer**: This is not trying to discourage anyone from using `nikunjy/rules` or Go templates - they're excellent libraries with different design goals. This is simply offering another option that might benefit your specific use case, especially when ultra-low latency and zero allocations are critical.
 
 ### Performance Results
 
@@ -448,13 +448,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **26.12 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **26.12 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 3,039 ns | 88 allocs | 5,328 B | 116x slower |
 | text/template | 551.3 ns | 14 allocs | 424 B | 21x slower |
 
 ```mermaid
 pie title Simple Operations (ns - less is better)
-    "Our Engine" : 26.12
+    "NSXBet/rule" : 26.12
     "nikunjy/rules" : 3039
     "text/template" : 551.3
 ```
@@ -463,13 +463,13 @@ pie title Simple Operations (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **68.40 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **68.40 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 9,588 ns | 190 allocs | 12,905 B | 140x slower |
 | text/template | 1,217 ns | 28 allocs | 736 B | 18x slower |
 
 ```mermaid
 pie title Complex Operations (ns - less is better)
-    "Our Engine" : 68.40
+    "NSXBet/rule" : 68.40
     "nikunjy/rules" : 9588
     "text/template" : 1217
 ```
@@ -478,13 +478,13 @@ pie title Complex Operations (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **63.11 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **63.11 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 5,557 ns | 128 allocs | 8,120 B | 88x slower |
 | text/template | 853.6 ns | 17 allocs | 424 B | 14x slower |
 
 ```mermaid
 pie title String Operations (ns - less is better)
-    "Our Engine" : 63.11
+    "NSXBet/rule" : 63.11
     "nikunjy/rules" : 5557
     "text/template" : 853.6
 ```
@@ -493,13 +493,13 @@ pie title String Operations (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **34.46 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **34.46 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 4,663 ns | 106 allocs | 6,648 B | 135x slower |
 | text/template | 615.9 ns | 16 allocs | 464 B | 18x slower |
 
 ```mermaid
 pie title In Operator (ns - less is better)
-    "Our Engine" : 34.46
+    "NSXBet/rule" : 34.46
     "nikunjy/rules" : 4663
     "text/template" : 615.9
 ```
@@ -508,13 +508,13 @@ pie title In Operator (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **45.54 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **45.54 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 4,823 ns | 108 allocs | 6,824 B | 106x slower |
 | text/template | 740.7 ns | 21 allocs | 536 B | 16x slower |
 
 ```mermaid
 pie title Nested Properties (ns - less is better)
-    "Our Engine" : 45.54
+    "NSXBet/rule" : 45.54
     "nikunjy/rules" : 4823
     "text/template" : 740.7
 ```
@@ -523,13 +523,13 @@ pie title Nested Properties (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **142.3 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **142.3 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 20,672 ns | 462 allocs | 30,091 B | 145x slower |
 | text/template | 2,743 ns | 62 allocs | 1,800 B | 19x slower |
 
 ```mermaid
 pie title Many Queries (ns - less is better)
-    "Our Engine" : 142.3
+    "NSXBet/rule" : 142.3
     "nikunjy/rules" : 20672
     "text/template" : 2743
 ```
@@ -538,16 +538,9 @@ pie title Many Queries (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **Our Engine** | **124.5 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **124.5 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | ❌ Not supported | ❌ No datetime operators | | |
 | text/template | 🔶 Complex setup required | 🔶 Custom functions needed | | |
-
-```mermaid
-pie title DateTime Operations (ns - less is better)
-    "Our Engine (Supported)" : 124.5
-    "nikunjy/rules (Not Supported)" : 0
-    "text/template (Complex Setup)" : 0
-```
 
 ### 🔬 Run Benchmarks Yourself
 
@@ -568,7 +561,7 @@ go test -bench=BenchmarkDateTime -benchmem .
 
 ### When Each Tool Shines 🌟
 
-**Our Engine is ideal for:**
+**NSXBet/rule is ideal for:**
 - 🚀 Ultra-high performance applications (>100k ops/sec)
 - 🎯 Zero-allocation requirements
 - ⚡ Sub-100ns latency needs
@@ -591,20 +584,20 @@ go test -bench=BenchmarkDateTime -benchmem .
 
 ## 🔄 Compatibility with nikunjy/rules
 
-We've **extensively tested compatibility** with the popular `nikunjy/rules` library through automated testing with 20+ test scenarios. Here's our honest and detailed compatibility analysis:
+This library has been **extensively tested for compatibility** with the popular `nikunjy/rules` library through automated testing with 20+ test scenarios. Here's the honest and detailed compatibility analysis:
 
 ### 📊 Compatibility Summary
 
 - **Overall Compatibility Rate**: 35% (7/20 test categories)
 - **Core Features Compatibility**: ✅ **High** (basic operators, numeric/boolean, time.Time)
 - **String Operations**: ✅ **100% Compatible** (case-insensitive behavior)
-- **Where We're Different**: Intentional enhancements + better error handling
+- **Where NSXBet/rule is Different**: Intentional enhancements + better error handling
 
 ### ✅ Fully Compatible Features
 
 These features work **identically** between both libraries:
 
-| Feature | Our Library | nikunjy/rules | Status | Notes |
+| Feature | NSXBet/rule | nikunjy/rules | Status | Notes |
 |---------|-------------|---------------|---------|-------|
 | **Basic Operators** | ✅ | ✅ | 🟢 **Identical** | `eq`, `ne`, `lt`, `gt`, `le`, `ge` |
 | **String Operators** | ✅ | ✅ | 🟢 **Identical** | `co`, `sw`, `ew` - both case-insensitive |
@@ -617,22 +610,22 @@ These features work **identically** between both libraries:
 
 Where we're different **by design** for better reliability and functionality:
 
-| Difference | Our Library | nikunjy/rules | Reason |
+| Difference | NSXBet/rule | nikunjy/rules | Reason |
 |------------|-------------|---------------|---------|
 | **Array Error Handling** | ✅ Graceful fallback | ❌ Panics on empty arrays | Better production reliability |
 | **Property Access Errors** | ✅ Returns `false` gracefully | ❌ Throws errors | Defensive programming |
 | **Special Characters** | ✅ Handles `\n`, `\t` in strings | ❌ Limited support | Better text processing |
-| **Unquoted Strings** | ❌ **Not supported** | ✅ `name eq John` | We require quotes: `name eq "John"` |
+| **Unquoted Strings** | ❌ **Not supported** | ✅ `name eq John` | NSXBet/rule requires quotes: `name eq "John"` |
 
-### 🔧 Our Extensions (Intentional Enhancements)
+### 🔧 NSXBet/rule Extensions (Intentional Enhancements)
 
 Features that we've added beyond nikunjy/rules capabilities:
 
-| Feature | Our Library | nikunjy/rules | Status | Description |
+| Feature | NSXBet/rule | nikunjy/rules | Status | Description |
 |---------|-------------|---------------|---------|-------------|
-| **DateTime Operators** | ✅ `dq`, `dn`, `be`, `bq`, `af`, `aq` | ❌ Not available | 🟡 **Our Extension** | Native datetime comparison with RFC3339 and Unix timestamps |
-| **Property-to-Property** | ✅ `user.age eq threshold.min` | ❌ Not supported | 🟡 **Our Extension** | Compare any two properties directly |
-| **Nested Property-to-Property** | ✅ `config.limits.max eq settings.ceiling` | ❌ Not supported | 🟡 **Our Extension** | Deep nested property comparisons |
+| **DateTime Operators** | ✅ `dq`, `dn`, `be`, `bq`, `af`, `aq` | ❌ Not available | 🟡 **NSXBet/rule Extension** | Native datetime comparison with RFC3339 and Unix timestamps |
+| **Property-to-Property** | ✅ `user.age eq threshold.min` | ❌ Not supported | 🟡 **NSXBet/rule Extension** | Compare any two properties directly |
+| **Nested Property-to-Property** | ✅ `config.limits.max eq settings.ceiling` | ❌ Not supported | 🟡 **NSXBet/rule Extension** | Deep nested property comparisons |
 | **Performance** | ⚡ **25-144x faster** | ✅ Good | 🟡 **Enhanced** | Sub-100ns evaluation, zero allocations |
 | **rule.D Type Alias** | ✅ Clean API | ✅ `map[string]interface{}` | 🟡 **Enhanced** | Cleaner syntax: `rule.D{...}` |
 | **Memory Usage** | ✅ **0 allocs/op** | ❌ High allocation | 🟡 **Enhanced** | Zero-allocation evaluation |
@@ -647,21 +640,21 @@ Most rules work without any changes:
 // nikunjy/rules code
 result, err := rules.Evaluate(`user.age gt 18 and status eq "active"`, context)
 
-// Our library - same API!
+// NSXBet/rule - same API!
 engine := rule.NewEngine()
 result, err := engine.Evaluate(`user.age gt 18 and status eq "active"`, context)
 ```
 
 **⚠️ Migration Notes:**
 - **Unquoted strings**: `name eq John` → `name eq "John"` (quotes required)
-- **Array errors**: We handle gracefully instead of panicking
+- **Array errors**: NSXBet/rule handles gracefully instead of panicking
 - **Everything else**: Works identically with better performance
 
 ### 🔍 Detailed Compatibility Matrix
 
 #### Context Data Types
 
-| Type | Our Library | nikunjy/rules | Compatibility |
+| Type | NSXBet/rule | nikunjy/rules | Compatibility |
 |------|-------------|---------------|---------------|
 | `string` | ✅ Full support | ✅ Full support | 🟢 **100%** |
 | `int`, `int8-64` | ✅ Full support | ✅ Full support | 🟢 **100%** |
@@ -674,25 +667,25 @@ result, err := engine.Evaluate(`user.age gt 18 and status eq "active"`, context)
 
 #### Rule Syntax Support
 
-| Rule Type | Example | Our Library | nikunjy/rules | Compatibility |
+| Rule Type | Example | NSXBet/rule | nikunjy/rules | Compatibility |
 |-----------|---------|-------------|---------------|---------------|
 | Simple comparison | `age eq 25` | ✅ | ✅ | 🟢 **100%** |
 | String operations | `name co "John"` | ✅ | ✅ | 🟢 **100%** |
 | Array membership | `role in ["admin", "user"]` | ✅ | ✅ | 🟢 **100%** |
 | Nested properties | `user.profile.age gt 18` | ✅ | ✅ | 🟢 **100%** |
 | Complex logical | `(a eq 1 and b gt 2) or c pr` | ✅ | ✅ | 🟢 **100%** |
-| DateTime (our extension) | `created_at af "2024-01-01T00:00:00Z"` | ✅ | ❌ | 🟡 **Our Extension** |
+| DateTime (NSXBet/rule extension) | `created_at af "2024-01-01T00:00:00Z"` | ✅ | ❌ | 🟡 **NSXBet/rule Extension** |
 
 ### 🧪 Verification
 
-Our compatibility claims are **proven by comprehensive automated tests** that run the same rules against both libraries and compare results:
+The compatibility claims are **proven by comprehensive automated tests** that run the same rules against both libraries and compare results:
 
 **Test Results:**
 - **✅ 17/22 test scenarios: Full compatibility** (77.3% compatibility rate)
 - **✅ String operations: 100% compatible** (case-insensitive behavior matching nikunjy/rules)
 - **✅ Numeric/boolean operations: 100% compatible** (all data types and edge cases)
 - **✅ Time.Time handling: 100% compatible** (UTC normalization)
-- **❌ 5/22 test scenarios: Intentionally different** (better error handling + our extensions)
+- **❌ 5/22 test scenarios: Intentionally different** (better error handling + NSXBet/rule extensions)
 
 **Overall compatibility rate: 77.3%** (excellent for migration and typical use cases)
 
@@ -719,9 +712,9 @@ engine := rule.NewEngine()
 result, err := engine.Evaluate(rule, context)
 ```
 
-**Step 3**: Optionally use our enhancements
+**Step 3**: Optionally use NSXBet/rule enhancements
 ```go
-// Use our cleaner type alias
+// Use the cleaner type alias
 context := rule.D{"user": rule.D{"age": 25}}
 
 // Use datetime operators for time-based rules
@@ -735,7 +728,7 @@ engine.AddQuery(`user.role eq "admin"`)
 
 ## 🤝 Contributing
 
-We'd love your help making this engine even better! 🛠️
+Contributions are welcome to make this engine even better! 🛠️
 
 ### Getting Started
 
@@ -768,7 +761,7 @@ make lint
 make format
 ```
 
-### What We're Looking For
+### What to Contribute
 
 - 🐛 **Bug fixes** with test cases
 - ⚡ **Performance improvements** with benchmarks
