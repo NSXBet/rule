@@ -452,6 +452,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 | nikunjy/rules | 3,039 ns | 88 allocs | 5,328 B | 116x slower |
 | text/template | 551.3 ns | 14 allocs | 424 B | 21x slower |
 
+```mermaid
+pie title Simple Operations (ns - less is better)
+    "Our Engine" : 26.12
+    "nikunjy/rules" : 3039
+    "text/template" : 551.3
+```
+
 #### Complex Operations (`(user.age gt 18 and status eq "active") or user.name co "Admin"`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
@@ -459,6 +466,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 | **Our Engine** | **68.40 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 9,588 ns | 190 allocs | 12,905 B | 140x slower |
 | text/template | 1,217 ns | 28 allocs | 736 B | 18x slower |
+
+```mermaid
+pie title Complex Operations (ns - less is better)
+    "Our Engine" : 68.40
+    "nikunjy/rules" : 9588
+    "text/template" : 1217
+```
 
 #### String Operations (`name co "John" and email ew ".com"`)
 
@@ -468,6 +482,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 | nikunjy/rules | 5,557 ns | 128 allocs | 8,120 B | 88x slower |
 | text/template | 853.6 ns | 17 allocs | 424 B | 14x slower |
 
+```mermaid
+pie title String Operations (ns - less is better)
+    "Our Engine" : 63.11
+    "nikunjy/rules" : 5557
+    "text/template" : 853.6
+```
+
 #### In Operator (`color in ["red", "green", "blue"]`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
@@ -475,6 +496,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 | **Our Engine** | **34.46 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 4,663 ns | 106 allocs | 6,648 B | 135x slower |
 | text/template | 615.9 ns | 16 allocs | 464 B | 18x slower |
+
+```mermaid
+pie title In Operator (ns - less is better)
+    "Our Engine" : 34.46
+    "nikunjy/rules" : 4663
+    "text/template" : 615.9
+```
 
 #### Nested Properties (`user.profile.settings.theme eq "dark"`)
 
@@ -484,6 +512,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 | nikunjy/rules | 4,823 ns | 108 allocs | 6,824 B | 106x slower |
 | text/template | 740.7 ns | 21 allocs | 536 B | 16x slower |
 
+```mermaid
+pie title Nested Properties (ns - less is better)
+    "Our Engine" : 45.54
+    "nikunjy/rules" : 4823
+    "text/template" : 740.7
+```
+
 #### Many Queries (5 different queries with pre-compilation)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
@@ -492,6 +527,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 | nikunjy/rules | 20,672 ns | 462 allocs | 30,091 B | 145x slower |
 | text/template | 2,743 ns | 62 allocs | 1,800 B | 19x slower |
 
+```mermaid
+pie title Many Queries (ns - less is better)
+    "Our Engine" : 142.3
+    "nikunjy/rules" : 20672
+    "text/template" : 2743
+```
+
 #### DateTime Operations (`created_at af "2024-01-01T00:00:00Z"`)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
@@ -499,6 +541,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 | **Our Engine** | **124.5 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | ❌ Not supported | ❌ No datetime operators | | |
 | text/template | 🔶 Complex setup required | 🔶 Custom functions needed | | |
+
+```mermaid
+pie title DateTime Operations (ns - less is better)
+    "Our Engine (Supported)" : 124.5
+    "nikunjy/rules (Not Supported)" : 0
+    "text/template (Complex Setup)" : 0
+```
 
 ### 🔬 Run Benchmarks Yourself
 
