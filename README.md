@@ -1,8 +1,8 @@
 # Rule Engine 🚀
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-blue.svg)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.24+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-248%20Passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/Tests-All%20Passing-brightgreen.svg)](#)
 [![Lint](https://img.shields.io/badge/Lint-100%25%20Clean-brightgreen.svg)](#)
 
 A **blazingly fast**, **zero-allocation** rule engine for Go that evaluates logical expressions in under 100 nanoseconds ⚡
@@ -35,7 +35,7 @@ package main
 
 import (
     "fmt"
-    "log"
+    "log/slog"
     
     "github.com/NSXBet/rule"
 )
@@ -56,7 +56,8 @@ func main() {
     // Evaluate a rule
     result, err := engine.Evaluate(`user.age gt 18 and user.status eq "active"`, context)
     if err != nil {
-        log.Fatal(err)
+        slog.Error("Rule evaluation failed", "error", err)
+        return
     }
     
     fmt.Printf("User can access: %t\n", result) // Output: User can access: true
@@ -95,7 +96,8 @@ Pre-compiles and caches a query for optimal performance. This is optional but re
 // Pre-compile for better performance
 err := engine.AddQuery(`user.role eq "admin"`)
 if err != nil {
-    log.Fatal(err)
+    slog.Error("Rule compilation failed", "error", err)
+    return
 }
 
 // Later evaluations will be faster
@@ -587,13 +589,13 @@ All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **NSXBet/rule** | **26.12 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **25.65 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 3,039 ns | 88 allocs | 5,328 B | 116x slower |
 | text/template | 551.3 ns | 14 allocs | 424 B | 21x slower |
 
 ```mermaid
 pie title Simple Operations (ns - less is better)
-    "NSXBet/rule" : 26.12
+    "NSXBet/rule" : 25.65
     "nikunjy/rules" : 3039
     "text/template" : 551.3
 ```
@@ -602,13 +604,13 @@ pie title Simple Operations (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **NSXBet/rule** | **68.40 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **67.31 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 9,588 ns | 190 allocs | 12,905 B | 140x slower |
 | text/template | 1,217 ns | 28 allocs | 736 B | 18x slower |
 
 ```mermaid
 pie title Complex Operations (ns - less is better)
-    "NSXBet/rule" : 68.40
+    "NSXBet/rule" : 67.31
     "nikunjy/rules" : 9588
     "text/template" : 1217
 ```
@@ -617,13 +619,13 @@ pie title Complex Operations (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **NSXBet/rule** | **63.11 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **62.21 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 5,557 ns | 128 allocs | 8,120 B | 88x slower |
 | text/template | 853.6 ns | 17 allocs | 424 B | 14x slower |
 
 ```mermaid
 pie title String Operations (ns - less is better)
-    "NSXBet/rule" : 63.11
+    "NSXBet/rule" : 62.21
     "nikunjy/rules" : 5557
     "text/template" : 853.6
 ```
@@ -632,13 +634,13 @@ pie title String Operations (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **NSXBet/rule** | **34.46 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **34.38 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 4,663 ns | 106 allocs | 6,648 B | 135x slower |
 | text/template | 615.9 ns | 16 allocs | 464 B | 18x slower |
 
 ```mermaid
 pie title In Operator (ns - less is better)
-    "NSXBet/rule" : 34.46
+    "NSXBet/rule" : 34.38
     "nikunjy/rules" : 4663
     "text/template" : 615.9
 ```
@@ -647,13 +649,13 @@ pie title In Operator (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **NSXBet/rule** | **45.54 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **45.25 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 4,823 ns | 108 allocs | 6,824 B | 106x slower |
 | text/template | 740.7 ns | 21 allocs | 536 B | 16x slower |
 
 ```mermaid
 pie title Nested Properties (ns - less is better)
-    "NSXBet/rule" : 45.54
+    "NSXBet/rule" : 45.25
     "nikunjy/rules" : 4823
     "text/template" : 740.7
 ```
@@ -662,13 +664,13 @@ pie title Nested Properties (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **NSXBet/rule** | **142.3 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **143.2 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | 20,672 ns | 462 allocs | 30,091 B | 145x slower |
 | text/template | 2,743 ns | 62 allocs | 1,800 B | 19x slower |
 
 ```mermaid
 pie title Many Queries (ns - less is better)
-    "NSXBet/rule" : 142.3
+    "NSXBet/rule" : 143.2
     "nikunjy/rules" : 20672
     "text/template" : 2743
 ```
@@ -677,7 +679,7 @@ pie title Many Queries (ns - less is better)
 
 | Engine | Time/op | Allocs/op | Memory/op | Relative Speed |
 |--------|---------|-----------|-----------|----------------|
-| **NSXBet/rule** | **124.5 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
+| **NSXBet/rule** | **122.7 ns** | **0 allocs** | **0 B** | **1x (baseline)** ✅ |
 | nikunjy/rules | ❌ Not supported | ❌ No datetime operators | | |
 | text/template | 🔶 Complex setup required | 🔶 Custom functions needed | | |
 
