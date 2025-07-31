@@ -1,8 +1,10 @@
 package rule
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type Parser struct {
@@ -22,7 +24,17 @@ func NewParser(tokens []Token) *Parser {
 }
 
 func (p *Parser) Parse() (*ASTNode, error) {
-	return p.parseExpression()
+	ast, err := p.parseExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for trailing tokens after a complete expression
+	if p.curToken.Type != EOF {
+		return nil, ErrTrailingTokens
+	}
+
+	return ast, nil
 }
 
 func (p *Parser) advance() {
@@ -151,6 +163,11 @@ func (p *Parser) parseComparisonExpression() (*ASTNode, error) {
 		return NewBinaryOpNode(op, left, right), nil
 	}
 
+	// Check for missing operator - if we have another value without an operator, that's an error
+	if p.isValue(p.curToken.Type) {
+		return nil, ErrMissingOperator
+	}
+
 	return left, nil
 }
 
@@ -158,6 +175,11 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 	switch p.curToken.Type {
 	case PAREN_OPEN:
 		p.advance()
+
+		// Check for empty parentheses
+		if p.curToken.Type == PAREN_CLOSE {
+			return nil, ErrEmptyParentheses
+		}
 
 		expr, err := p.parseExpression()
 		if err != nil {
@@ -375,10 +397,44 @@ func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 	}
 }
 
+func (p *Parser) isValue(tokenType TokenType) bool {
+	switch tokenType {
+	case IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START:
+		return true
+	case EOF, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
+		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, PR,
+		DQ, DN, BE, BQ, AF, AQ, AND, OR, NOT, EQUALS, NOT_EQUALS:
+		return false
+	default:
+		return false
+	}
+}
+
 func ParseRule(rule string) (*ASTNode, error) {
+	// Check for empty query
+	if len(strings.TrimSpace(rule)) == 0 {
+		return nil, ErrEmptyQuery
+	}
+
 	lexer := NewLexer(rule)
 	tokens := lexer.Tokenize()
+
+	// Check for lexical errors first
+	if lexer.HasErrors() {
+		return nil, errors.Join(lexer.GetErrors()...)
+	}
+
 	parser := NewParser(tokens)
 
-	return parser.Parse()
+	ast, err := parser.Parse()
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform semantic validation
+	if validationErr := ValidateAST(ast); validationErr != nil {
+		return nil, validationErr
+	}
+
+	return ast, nil
 }

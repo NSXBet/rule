@@ -12,6 +12,7 @@ type Lexer struct {
 	position int
 	current  rune
 	tokens   []Token
+	errors   []error
 }
 
 func NewLexer(input string) *Lexer {
@@ -19,6 +20,7 @@ func NewLexer(input string) *Lexer {
 		input:  input,
 		runes:  []rune(input),
 		tokens: make([]Token, 0, tokenSliceInitialCapacity),
+		errors: make([]error, 0),
 	}
 	l.readChar()
 
@@ -59,11 +61,24 @@ func (l *Lexer) Tokenize() []Token {
 		default:
 			l.handleDefaultToken(start)
 		}
+
+		// If we encountered a lexical error, stop tokenizing
+		if len(l.errors) > 0 {
+			break
+		}
 	}
 
 	l.tokens = append(l.tokens, Token{Type: EOF, Start: l.position, End: l.position})
 
 	return l.tokens
+}
+
+func (l *Lexer) HasErrors() bool {
+	return len(l.errors) > 0
+}
+
+func (l *Lexer) GetErrors() []error {
+	return l.errors
 }
 
 func (l *Lexer) handleSingleCharToken(tokenType TokenType, start int) {
@@ -72,7 +87,12 @@ func (l *Lexer) handleSingleCharToken(tokenType TokenType, start int) {
 }
 
 func (l *Lexer) handleStringToken(start int) {
-	value := l.readString()
+	value, err := l.readString()
+	if err != nil {
+		l.errors = append(l.errors, err)
+		return
+	}
+
 	l.tokens = append(l.tokens, Token{
 		Type:  STRING,
 		Value: value,
@@ -217,7 +237,7 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
-func (l *Lexer) readString() string {
+func (l *Lexer) readString() (string, error) {
 	l.readChar() // skip opening quote
 
 	var result strings.Builder
@@ -228,7 +248,7 @@ func (l *Lexer) readString() string {
 			l.readChar() // consume backslash
 
 			if l.current == 0 {
-				break // End of input
+				return "", ErrUnterminatedString
 			}
 
 			switch l.current {
@@ -254,9 +274,14 @@ func (l *Lexer) readString() string {
 		l.readChar()
 	}
 
+	// Check if we reached end of input without finding closing quote
+	if l.current == 0 {
+		return "", ErrUnterminatedString
+	}
+
 	l.readChar() // skip closing quote
 
-	return result.String()
+	return result.String(), nil
 }
 
 func (l *Lexer) readNumber() (string, float64, bool) {

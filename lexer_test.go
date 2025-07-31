@@ -231,7 +231,11 @@ func TestLexerReadString(t *testing.T) {
 	lexer := NewLexer(`"hello world"`)
 	// Start at opening quote, readString() should handle consuming it
 
-	result := lexer.readString()
+	result, err := lexer.readString()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
 	if result != "hello world" {
 		t.Errorf("Expected 'hello world', got '%s'", result)
 	}

@@ -24,6 +24,16 @@ func TestErrorInterface(t *testing.T) {
 		{ErrParseError, "Failed to parse rule"},
 		{ErrEvaluationError, "Failed to evaluate rule"},
 		{ErrRuleNotFound, "Rule not found - use AddQuery to pre-compile rule"},
+		{ErrUnterminatedString, "Unterminated string literal"},
+		{ErrMissingOperator, "Missing operator between operands"},
+		{ErrInvalidSyntax, "Invalid query syntax"},
+		{ErrInvalidInOperand, "IN operator requires an array operand"},
+		{ErrInvalidStringOp, "String operators (co/sw/ew) can only be used with string operands"},
+		{ErrInvalidPresenceOp, "Presence operator (pr) can only be used with identifiers or properties"},
+		{ErrEmptyQuery, "Query cannot be empty"},
+		{ErrEmptyParentheses, "Empty parentheses are not allowed"},
+		{ErrUnbalancedParens, "Unbalanced parentheses"},
+		{ErrTrailingTokens, "Unexpected tokens after complete expression"},
 	}
 
 	for _, test := range errors {
