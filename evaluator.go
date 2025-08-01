@@ -183,6 +183,7 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 		SW,
 		EW,
 		IN,
+		NOT_IN,
 		DQ,
 		DN,
 		BE,
@@ -205,7 +206,7 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 		return e.evaluateLogicalAnd(node, result)
 	case OR:
 		return e.evaluateLogicalOr(node, result)
-	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ:
+	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ:
 		return e.evaluateComparisonOperator(node, result)
 	case EOF,
 		IDENTIFIER,
@@ -419,6 +420,8 @@ func (e *Evaluator) performComparison(
 		result.Bool = e.stringEndsWith(left, right)
 	case IN:
 		result.Bool = e.membershipCheck(left, right)
+	case NOT_IN:
+		result.Bool = !e.membershipCheck(left, right)
 	case DQ:
 		result.Bool = e.compareDateTimes(
 			left,

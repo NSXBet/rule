@@ -26,6 +26,7 @@ const (
 	SW
 	EW
 	IN
+	NOT_IN //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
 	PR
 
 	// DQ represents the datetime equality operator.
@@ -104,6 +105,7 @@ var tokenStringMap = map[TokenType]string{
 	SW:          "sw",
 	EW:          "ew",
 	IN:          "in",
+	NOT_IN:      "not in",
 	PR:          "pr",
 	DQ:          "dq",
 	DN:          "dn",
