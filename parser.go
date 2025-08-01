@@ -236,6 +236,7 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 		SW,
 		EW,
 		IN,
+		NOT_IN,
 		PR,
 		DQ,
 		DN,
@@ -319,6 +320,7 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 				SW,
 				EW,
 				IN,
+				NOT_IN,
 				PR,
 				DQ,
 				DN,
@@ -375,7 +377,7 @@ func (p *Parser) parseIdentifierOrProperty() (*ASTNode, error) {
 
 func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 	switch tokenType {
-	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, PR, DQ, DN, BE, BQ, AF, AQ, EQUALS, NOT_EQUALS:
+	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, PR, DQ, DN, BE, BQ, AF, AQ, EQUALS, NOT_EQUALS:
 		return true
 	case EOF,
 		IDENTIFIER,
@@ -402,7 +404,7 @@ func (p *Parser) isValue(tokenType TokenType) bool {
 	case IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START:
 		return true
 	case EOF, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
-		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, PR,
+		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, PR,
 		DQ, DN, BE, BQ, AF, AQ, AND, OR, NOT, EQUALS, NOT_EQUALS:
 		return false
 	default:

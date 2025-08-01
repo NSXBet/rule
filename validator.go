@@ -47,7 +47,7 @@ func validateBinaryOperation(node *ASTNode) error {
 	}
 
 	switch node.Operator {
-	case IN:
+	case IN, NOT_IN:
 		return validateInOperation(node)
 	case CO, SW, EW:
 		return validateStringOperation(node)
@@ -71,7 +71,7 @@ func validateUnaryOperation(node *ASTNode) error {
 		return validatePresenceOperation(node)
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE,
-		CO, SW, EW, IN, DQ, DN, BE, BQ, AF, AQ, AND, OR, NOT, EQUALS, NOT_EQUALS:
+		CO, SW, EW, IN, NOT_IN, DQ, DN, BE, BQ, AF, AQ, AND, OR, NOT, EQUALS, NOT_EQUALS:
 		// Other operators don't apply to unary operations
 		return nil
 	}

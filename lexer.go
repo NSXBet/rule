@@ -191,6 +191,25 @@ func (l *Lexer) handleIdentifierToken(start int) {
 
 	if kwType, exists := keywordMap[value]; exists {
 		tokenType = kwType
+
+		// Check for compound operators like "not in"
+		if tokenType == NOT && l.lookAheadForIn() {
+			// Consume the "in" part
+			l.skipWhitespace()
+
+			inValue := l.readIdentifier()
+			if inValue == "in" {
+				l.tokens = append(l.tokens, Token{
+					Type:  NOT_IN,
+					Value: "not in",
+					Start: start,
+					End:   l.position - 1,
+				})
+
+				return
+			}
+		}
+
 		if tokenType == BOOLEAN {
 			boolVal := value == trueString
 			l.tokens = append(l.tokens, Token{
@@ -332,4 +351,37 @@ func (l *Lexer) readIdentifier() string {
 	}
 
 	return string(l.runes[start : l.position-1])
+}
+
+func (l *Lexer) lookAheadForIn() bool {
+	// Save current position
+	savedPosition := l.position
+	savedCurrent := l.current
+
+	// Skip whitespace
+	for unicode.IsSpace(l.current) {
+		l.readChar()
+	}
+
+	// Check if next identifier is "in"
+	if unicode.IsLetter(l.current) {
+		start := l.position - 1
+		for unicode.IsLetter(l.current) || unicode.IsDigit(l.current) || l.current == '_' {
+			l.readChar()
+		}
+
+		identifier := string(l.runes[start : l.position-1])
+
+		// Restore position
+		l.position = savedPosition
+		l.current = savedCurrent
+
+		return identifier == "in"
+	}
+
+	// Restore position
+	l.position = savedPosition
+	l.current = savedCurrent
+
+	return false
 }
