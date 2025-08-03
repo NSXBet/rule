@@ -203,4 +203,180 @@ var DateTimeComprehensiveTests = []Case{
 		},
 		true,
 	},
+
+	// DL (Days Less) Operator Tests - comparing timestamps with NOW
+	// Note: These tests use timestamps that are safely in the past to ensure deterministic results
+
+	// Basic DL functionality with RFC3339 timestamps
+	{"dl_rfc3339_within_threshold", `created_at dl 3650`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // About 5+ years ago, within 3650 days (10 years)
+	}, true},
+	{"dl_rfc3339_exactly_threshold", `created_at dl 1`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Well beyond 1 day threshold
+	}, false},
+	{"dl_rfc3339_beyond_threshold", `created_at dl 365`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Well beyond 365 days threshold
+	}, false},
+
+	// DL with Unix timestamps
+	{"dl_unix_within_threshold", `timestamp dl 3650`, rule.D{
+		"timestamp": int64(1577836800), // 2020-01-01T00:00:00Z, within 3650 days
+	}, true},
+	{"dl_unix_beyond_threshold", `timestamp dl 365`, rule.D{
+		"timestamp": int64(1577836800), // 2020-01-01T00:00:00Z - well beyond 365 days
+	}, false},
+
+	// DL with fractional days
+	{"dl_fractional_days_within", `created_at dl 3650.5`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, true},
+	{"dl_fractional_days_beyond", `created_at dl 0.5`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Beyond 0.5 days
+	}, false},
+
+	// DL with string number as days parameter
+	{"dl_string_days_within", `created_at dl "3650"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, true},
+	{"dl_string_days_beyond", `created_at dl "365"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, false},
+
+	// DL with nested properties
+	{"dl_nested_property", `event.created_at dl 3650`, rule.D{
+		"event": rule.D{
+			"created_at": "2020-01-01T00:00:00Z",
+		},
+	}, true},
+	{"dl_deep_nested_property", `user.profile.last_login dl 3650`, rule.D{
+		"user": rule.D{
+			"profile": rule.D{
+				"last_login": "2020-01-01T00:00:00Z",
+			},
+		},
+	}, true},
+
+	// DL error cases
+	{"dl_invalid_timestamp", `created_at dl 30`, rule.D{
+		"created_at": "invalid-timestamp",
+	}, false},
+	{"dl_invalid_days_string", `created_at dl "not-a-number"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, false},
+	{"dl_boolean_days", `created_at dl true`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, false},
+	{"dl_missing_property", `nonexistent dl 30`, rule.D{
+		"other_field": "value",
+	}, false},
+
+	// DL with zero and negative days
+	{"dl_zero_days", `created_at dl 0`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Definitely beyond 0 days
+	}, false},
+	{"dl_negative_days", `created_at dl -1`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Should be false for negative threshold
+	}, false},
+
+	// DL in complex expressions
+	{"dl_with_and_operator", `created_at dl 3650 and status eq "active"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+		"status":     "active",
+	}, true},
+	{"dl_with_or_operator", `created_at dl 365 or updated_at dl 3650`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Beyond 365 days (false)
+		"updated_at": "2020-01-01T00:00:00Z", // Within 3650 days (true)
+	}, true},
+
+	// DG (Days Greater) Operator Tests - comparing timestamps with NOW (opposite of DL)
+	// Note: These tests use timestamps that are safely in the past to ensure deterministic results
+
+	// Basic DG functionality with RFC3339 timestamps
+	{"dg_rfc3339_beyond_threshold", `created_at dg 365`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // About 5+ years ago, beyond 365 days (1 year)
+	}, true},
+	{"dg_rfc3339_within_threshold", `created_at dg 3650`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // About 5+ years ago, within 3650 days (10 years)
+	}, false},
+	{"dg_rfc3339_exactly_threshold", `created_at dg 0.5`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Well beyond 0.5 days threshold
+	}, true},
+
+	// DG with Unix timestamps
+	{"dg_unix_beyond_threshold", `timestamp dg 365`, rule.D{
+		"timestamp": int64(1577836800), // 2020-01-01T00:00:00Z, beyond 365 days
+	}, true},
+	{"dg_unix_within_threshold", `timestamp dg 3650`, rule.D{
+		"timestamp": int64(1577836800), // 2020-01-01T00:00:00Z, within 3650 days
+	}, false},
+
+	// DG with fractional days
+	{"dg_fractional_days_beyond", `created_at dg 365.5`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, true},
+	{"dg_fractional_days_within", `created_at dg 3650.5`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Within 3650.5 days
+	}, false},
+
+	// DG with string number as days parameter
+	{"dg_string_days_beyond", `created_at dg "365"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, true},
+	{"dg_string_days_within", `created_at dg "3650"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, false},
+
+	// DG with nested properties
+	{"dg_nested_property", `event.created_at dg 365`, rule.D{
+		"event": rule.D{
+			"created_at": "2020-01-01T00:00:00Z",
+		},
+	}, true},
+	{"dg_deep_nested_property", `user.profile.last_login dg 365`, rule.D{
+		"user": rule.D{
+			"profile": rule.D{
+				"last_login": "2020-01-01T00:00:00Z",
+			},
+		},
+	}, true},
+
+	// DG error cases
+	{"dg_invalid_timestamp", `created_at dg 30`, rule.D{
+		"created_at": "invalid-timestamp",
+	}, false},
+	{"dg_invalid_days_string", `created_at dg "not-a-number"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, false},
+	{"dg_boolean_days", `created_at dg true`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+	}, false},
+	{"dg_missing_property", `nonexistent dg 30`, rule.D{
+		"other_field": "value",
+	}, false},
+
+	// DG with zero and negative days
+	{"dg_zero_days", `created_at dg 0`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Definitely beyond 0 days
+	}, true},
+	{"dg_negative_days", `created_at dg -1`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Should be true for negative threshold
+	}, true},
+
+	// DG in complex expressions
+	{"dg_with_and_operator", `created_at dg 365 and status eq "inactive"`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z",
+		"status":     "inactive",
+	}, true},
+	{"dg_with_or_operator", `created_at dg 3650 or updated_at dg 365`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Within 3650 days (false)
+		"updated_at": "2020-01-01T00:00:00Z", // Beyond 365 days (true)
+	}, true},
+
+	// DL vs DG comparison tests (opposite behaviors)
+	{"dl_vs_dg_same_input_opposite_results_1", `created_at dl 365`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Beyond 365 days - dl should be false
+	}, false},
+	{"dl_vs_dg_same_input_opposite_results_2", `created_at dg 365`, rule.D{
+		"created_at": "2020-01-01T00:00:00Z", // Beyond 365 days - dg should be true
+	}, true},
 }

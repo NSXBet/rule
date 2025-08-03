@@ -36,6 +36,8 @@ const (
 	BQ // before or equal
 	AF // after
 	AQ // after or equal
+	DL // days less (days between NOW and timestamp < N)
+	DG // days greater (days between NOW and timestamp > N)
 
 	// AND represents the logical AND operator.
 	AND
@@ -75,6 +77,8 @@ var keywordMap = map[string]TokenType{
 	"bq":       BQ,
 	"af":       AF,
 	"aq":       AQ,
+	"dl":       DL,
+	"dg":       DG,
 	"and":      AND,
 	"or":       OR,
 	"not":      NOT,
@@ -113,6 +117,8 @@ var tokenStringMap = map[TokenType]string{
 	BQ:          "bq",
 	AF:          "af",
 	AQ:          "aq",
+	DL:          "dl",
+	DG:          "dg",
 	AND:         "and",
 	OR:          "or",
 	NOT:         "not",

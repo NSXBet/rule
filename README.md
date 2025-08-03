@@ -428,6 +428,8 @@ Perfect for time-based rules and scheduling logic:
 | `bq` | Before or equal | `deadline bq "2024-12-31T23:59:59Z"` | `true` if deadline is before or equal |
 | `af` | After | `event_time af "2024-01-01T00:00:00Z"` | `true` if event_time is after |
 | `aq` | After or equal | `publish_date aq "2024-01-01T00:00:00Z"` | `true` if publish_date is after or equal |
+| `dl` | Days less (within N days) | `created_at dl 30` | `true` if created_at is within last 30 days from now |
+| `dg` | Days greater (older than N days) | `updated_at dg 365` | `true` if updated_at is older than 365 days from now |
 
 Supports both **RFC3339** strings and **Unix timestamps**:
 
@@ -441,11 +443,13 @@ context := rule.D{
 engine.Evaluate(`created_at af "2024-01-01T00:00:00Z"`, context)     // true
 engine.Evaluate(`updated_at be 1720558400`, context)                   // true  
 engine.Evaluate(`publish_date aq "2024-01-01T00:00:00Z"`, context)   // true
+engine.Evaluate(`created_at dl 30`, context)                           // Days-based comparison
+engine.Evaluate(`updated_at dg 365`, context)                          // Relative to current time
 ```
 
 #### 🕐 DateTime vs Regular Operators
 
-**Key Difference**: DateTime operators (`dq`, `dn`, `be`, `bq`, `af`, `aq`) vs regular operators (`eq`, `ne`, `lt`, `gt`, `le`, `ge`)
+**Key Difference**: DateTime operators (`dq`, `dn`, `be`, `bq`, `af`, `aq`, `dl`, `dg`) vs regular operators (`eq`, `ne`, `lt`, `gt`, `le`, `ge`)
 
 | Aspect | Regular Operators | DateTime Operators |
 |--------|------------------|-------------------|
@@ -483,6 +487,49 @@ engine.Evaluate(`timestamp1 be timestamp2`, context)  // false (same time, not b
 - Comparing non-datetime strings or numbers
 - Exact string matching is required
 - Performance is critical for non-datetime data
+
+#### 🕒 Days-Based Operators (`dl`, `dg`)
+
+The `dl` (days less) and `dg` (days greater) operators provide convenient time-relative comparisons against the current time:
+
+```go
+context := rule.D{
+    "user": rule.D{
+        "last_login":       "2025-07-31T10:00:00Z",
+        "password_changed": "2025-07-20T09:00:00Z",
+        "account_created":  "2020-01-15T08:30:00Z",
+    },
+}
+
+// Days Less (dl) - checks if timestamp is WITHIN N days from now
+engine.Evaluate(`user.last_login dl 30`, context)       // true if within last 30 days
+engine.Evaluate(`user.password_changed dl 90`, context) // true if within last 90 days
+
+// Days Greater (dg) - checks if timestamp is OLDER than N days from now  
+engine.Evaluate(`user.account_created dg 365`, context) // true if older than 365 days
+engine.Evaluate(`user.last_login dg 7`, context)        // true if older than 7 days
+```
+
+**Key Features:**
+- ✅ **Automatic UTC conversion** - All times normalized to UTC
+- ✅ **Fractional days supported** - Use `1.5` for 1.5 days
+- ✅ **Multiple formats** - RFC3339 strings, Unix timestamps, time.Time values
+- ✅ **Current time reference** - Always compares against `time.Now().UTC()`
+
+**Common Use Cases:**
+```go
+// Security policies
+`user.last_login dl 30 and user.mfa_enabled eq true`     // Recent login + MFA
+`user.password_changed dl 90`                            // Password not expired
+
+// Data retention  
+`log.created_at dg 7`                                    // Logs older than 7 days
+`backup.timestamp dg 30`                                 // Old backups for cleanup
+
+// Business logic
+`subscription.expires_at dl 7`                          // Renewal reminder
+`trial.started_at dg 14`                                // Trial period ended
+```
 
 ### Complex Expressions
 
@@ -867,6 +914,8 @@ This section provides a comprehensive compatibility analysis between NSXBet/rule
 // DateTime comparisons
 `event.start_time af session.created_at`
 `deadline be "2024-12-31T23:59:59Z"`
+`user.last_login dl 30`      // Within last 30 days
+`account.created_at dg 365`  // Older than 365 days
 
 // Property-to-property comparisons
 `user.score gt leaderboard.minimum`
