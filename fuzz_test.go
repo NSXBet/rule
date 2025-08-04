@@ -19,6 +19,8 @@ func FuzzRuleExecution(f *testing.F) {
 	f.Add("price lt 99.99")
 	f.Add("tags co \"important\"")
 	f.Add("email ew \".com\"")
+	f.Add("created_at dl 30")
+	f.Add("updated_at dg 365")
 
 	// Add some invalid rules to test error handling
 	f.Add("age gt")

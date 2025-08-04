@@ -31,6 +31,7 @@ The entire specification is defined through comprehensive test cases in `test/fi
 - **String Operations**: `co` (contains), `sw` (starts with), `ew` (ends with)
 - **Membership**: `in` operator with arrays
 - **Presence**: `pr` operator to check if attribute exists
+- **DateTime Operations**: `dq`, `dn`, `be`, `bq`, `af`, `aq`, `dl`, `dg` for time comparisons
 - **Logical**: `not`, `and`, `or` with proper nesting
 - **Attribute Comparisons**: Both flat and nested property comparisons
 - **Nested Attributes**: Deep object navigation with dot notation
@@ -44,6 +45,8 @@ city co "York"                    // string contains
 color in ["red","green","blue"]   // membership
 user.profile.age ge 18            // nested attributes
 not (status eq "inactive")        // negation
+created_at dl 30                  // within last 30 days
+updated_at dg 365                 // older than 365 days
 ```
 
 ## Development Commands

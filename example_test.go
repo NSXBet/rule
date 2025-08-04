@@ -118,6 +118,240 @@ func Example_dateTimeOperations() {
 	// deadline af created_at -> true
 }
 
+// Example_daysLessOperator demonstrates the "dl" (days less) operator.
+func Example_daysLessOperator() {
+	engine := rule.NewEngine()
+
+	// Sample context with various timestamp formats
+	context := rule.D{
+		"user_registered":  "2024-07-01T10:00:00Z", // RFC3339 string (over 1 year ago)
+		"last_login":       1722547200,             // Unix timestamp (August 1, 2024 - about 1 year ago)
+		"password_changed": "2025-07-25T15:30:00Z", // Recent RFC3339 (about 1 week ago)
+		"account_created":  "2020-01-01T00:00:00Z", // Old timestamp (5+ years ago)
+	}
+
+	// Check if events happened within specific time ranges from NOW
+	rules := []string{
+		`user_registered dl 365`,  // Within last 365 days (about 1 year)
+		`last_login dl 400`,       // Within last 400 days (over 1 year)
+		`password_changed dl 30`,  // Within last 30 days
+		`account_created dl 1000`, // Within last 1000 days (about 3 years)
+		`user_registered dl 1.5`,  // Within last 1.5 days (fractional)
+	}
+
+	for _, r := range rules {
+		result, err := engine.Evaluate(r, context)
+		if err != nil {
+			slog.Error("Rule evaluation failed", "error", err)
+			continue
+		}
+
+		fmt.Printf("%s -> %t\n", r, result)
+	}
+	// Output:
+	// user_registered dl 365 -> false
+	// last_login dl 400 -> true
+	// password_changed dl 30 -> true
+	// account_created dl 1000 -> false
+	// user_registered dl 1.5 -> false
+}
+
+// Example_daysLessUseCase demonstrates practical use cases for the "dl" operator.
+func Example_daysLessUseCase() {
+	engine := rule.NewEngine()
+
+	// User session and security context
+	context := rule.D{
+		"user": rule.D{
+			"last_login":       "2025-07-31T10:00:00Z",
+			"password_changed": "2025-07-20T09:00:00Z",
+			"mfa_enabled":      true,
+		},
+		"session": rule.D{
+			"created_at": "2025-08-04T12:00:00Z",
+			"ip_address": "192.168.1.100",
+		},
+	}
+
+	// Security and business rules using "dl" operator
+	securityRules := []rule.D{
+		{
+			"name": "Recent login check",
+			"rule": `user.last_login dl 30`,
+			"desc": "User logged in within last 30 days",
+		},
+		{
+			"name": "Password age check",
+			"rule": `user.password_changed dl 90`,
+			"desc": "Password changed within last 90 days",
+		},
+		{
+			"name": "Active session check",
+			"rule": `session.created_at dl 1 and user.mfa_enabled eq true`,
+			"desc": "Session created within 1 day and MFA enabled",
+		},
+	}
+
+	for _, ruleData := range securityRules {
+		result, err := engine.Evaluate(ruleData["rule"].(string), context)
+		if err != nil {
+			slog.Error("Rule evaluation failed", "error", err)
+			continue
+		}
+
+		fmt.Printf("%s: %t\n", ruleData["name"], result)
+	}
+	// Output:
+	// Recent login check: true
+	// Password age check: true
+	// Active session check: true
+}
+
+// Example_daysGreaterOperator demonstrates the "dg" (days greater) operator.
+func Example_daysGreaterOperator() {
+	engine := rule.NewEngine()
+
+	// Sample context with various timestamp formats (old timestamps)
+	context := rule.D{
+		"account_created":  "2020-01-01T00:00:00Z", // Very old timestamp (5+ years ago)
+		"last_backup":      1577836800,             // Unix timestamp (2020-01-01T00:00:00Z)
+		"system_installed": "2018-06-15T12:00:00Z", // Even older timestamp
+		"recent_update":    "2025-07-25T15:30:00Z", // Recent timestamp
+		"maintenance_done": "2023-12-01T10:00:00Z", // About 1+ year ago
+	}
+
+	// Check if events happened MORE than specific time ranges from NOW
+	rules := []string{
+		`account_created dg 365`,   // More than 365 days ago (about 1 year)
+		`last_backup dg 400`,       // More than 400 days ago
+		`system_installed dg 1000`, // More than 1000 days ago (about 3 years)
+		`recent_update dg 30`,      // More than 30 days ago
+		`maintenance_done dg 365`,  // More than 365 days ago
+	}
+
+	for _, r := range rules {
+		result, err := engine.Evaluate(r, context)
+		if err != nil {
+			slog.Error("Rule evaluation failed", "error", err)
+			continue
+		}
+
+		fmt.Printf("%s -> %t\n", r, result)
+	}
+	// Output:
+	// account_created dg 365 -> true
+	// last_backup dg 400 -> true
+	// system_installed dg 1000 -> true
+	// recent_update dg 30 -> false
+	// maintenance_done dg 365 -> true
+}
+
+// Example_dlVsDgComparison demonstrates the opposite behavior of "dl" vs "dg" operators.
+func Example_dlVsDgComparison() {
+	engine := rule.NewEngine()
+
+	// Test with the same timestamp for both operators
+	context := rule.D{
+		"event_timestamp": "2023-01-01T00:00:00Z", // About 2+ years ago
+	}
+
+	// DL (days less) checks if timestamp is WITHIN the threshold from NOW
+	// DG (days greater) checks if timestamp is BEYOND the threshold from NOW
+	comparisonRules := []struct {
+		name string
+		rule string
+		desc string
+	}{
+		{"DL - Within 365 days", `event_timestamp dl 365`, "Should be false (beyond 365 days)"},
+		{"DG - Beyond 365 days", `event_timestamp dg 365`, "Should be true (beyond 365 days)"},
+		{"DL - Within 1000 days", `event_timestamp dl 1000`, "Should be true (within 1000 days)"},
+		{"DG - Beyond 1000 days", `event_timestamp dg 1000`, "Should be false (within 1000 days)"},
+	}
+
+	for _, ruleData := range comparisonRules {
+		result, err := engine.Evaluate(ruleData.rule, context)
+		if err != nil {
+			slog.Error("Rule evaluation failed", "error", err)
+			continue
+		}
+
+		fmt.Printf("%-21s: %t (%s)\n", ruleData.name, result, ruleData.desc)
+	}
+	// Output:
+	// DL - Within 365 days : false (Should be false (beyond 365 days))
+	// DG - Beyond 365 days : true (Should be true (beyond 365 days))
+	// DL - Within 1000 days: true (Should be true (within 1000 days))
+	// DG - Beyond 1000 days: false (Should be false (within 1000 days))
+}
+
+// Example_daysOperatorsUseCase demonstrates practical use cases combining "dl" and "dg" operators.
+func Example_daysOperatorsUseCase() {
+	engine := rule.NewEngine()
+
+	// System maintenance and security context
+	context := rule.D{
+		"system": rule.D{
+			"last_security_scan": "2025-07-29T10:00:00Z", // Recent
+			"last_full_backup":   "2024-12-01T02:00:00Z", // About 8 months ago
+			"os_install_date":    "2020-06-15T00:00:00Z", // Old system
+		},
+		"user": rule.D{
+			"password_changed": "2025-07-20T09:00:00Z", // Recent
+			"account_created":  "2019-03-10T12:00:00Z", // Old account
+		},
+	}
+
+	// Business rules combining both operators
+	systemRules := []rule.D{
+		{
+			"name": "Security scan up-to-date",
+			"rule": `system.last_security_scan dl 7`,
+			"desc": "Security scan within last 7 days",
+		},
+		{
+			"name": "Backup overdue",
+			"rule": `system.last_full_backup dg 180`,
+			"desc": "Last backup more than 180 days ago",
+		},
+		{
+			"name": "Legacy system",
+			"rule": `system.os_install_date dg 1825`,
+			"desc": "OS installed more than 5 years ago",
+		},
+		{
+			"name": "Password policy compliance",
+			"rule": `user.password_changed dl 90`,
+			"desc": "Password changed within last 90 days",
+		},
+		{
+			"name": "Established user",
+			"rule": `user.account_created dg 365`,
+			"desc": "Account created more than 1 year ago",
+		},
+	}
+
+	for _, ruleData := range systemRules {
+		result, err := engine.Evaluate(ruleData["rule"].(string), context)
+		if err != nil {
+			slog.Error("Rule evaluation failed", "error", err)
+			continue
+		}
+
+		status := "✅"
+		if !result {
+			status = "❌"
+		}
+
+		fmt.Printf("%s %s: %t\n", status, ruleData["name"], result)
+	}
+	// Output:
+	// ✅ Security scan up-to-date: true
+	// ✅ Backup overdue: true
+	// ✅ Legacy system: true
+	// ✅ Password policy compliance: true
+	// ✅ Established user: true
+}
+
 // Example_compatibility shows compatibility with nikunjy/rules.
 func Example_compatibility() {
 	// Context that works with both libraries

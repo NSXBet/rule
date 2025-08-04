@@ -162,6 +162,10 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 		return e.evaluateNotOperator(node, result)
 	case PR:
 		return e.evaluatePresenceOperator(node, result)
+	case DL, DG:
+		// DL and DG are binary operators, not unary
+		result.IsValid = false
+		return ErrInvalidOperator
 	case EOF,
 		IDENTIFIER,
 		STRING,
@@ -206,7 +210,7 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 		return e.evaluateLogicalAnd(node, result)
 	case OR:
 		return e.evaluateLogicalOr(node, result)
-	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ:
+	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ, DL, DG:
 		return e.evaluateComparisonOperator(node, result)
 	case EOF,
 		IDENTIFIER,
@@ -458,6 +462,10 @@ func (e *Evaluator) performComparison(
 			right,
 			func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
 		)
+	case DL:
+		result.Bool = e.compareDateTimeWithNow(left, right)
+	case DG:
+		result.Bool = e.compareDateTimeWithNowGreater(left, right)
 	case EOF,
 		IDENTIFIER,
 		STRING,
@@ -866,6 +874,115 @@ func (e *Evaluator) compareDateTimes(
 	}
 
 	return op(leftTime, rightTime)
+}
+
+const (
+	hoursPerDay    = 24.0
+	secondsPerHour = 3600.0
+)
+
+// parseDaysThreshold extracts a numeric days threshold from the right operand.
+func (e *Evaluator) parseDaysThreshold(right *EvalResult) (float64, bool) {
+	switch right.Type {
+	case ValueNumber:
+		return right.Num, true
+	case ValueString:
+		if daysThreshold, err := strconv.ParseFloat(right.Str, 64); err == nil {
+			return daysThreshold, true
+		}
+
+		return 0, false
+	case ValueBoolean, ValueArray, ValueIdentifier:
+		return 0, false
+	default:
+		return 0, false
+	}
+}
+
+// extractUnixTimestamp converts a datetime value to Unix timestamp.
+func (e *Evaluator) extractUnixTimestamp(left *EvalResult) (int64, bool) {
+	// Check if the original value is a time.Time (for context values)
+	if timeValue, ok := left.OriginalValue.(time.Time); ok {
+		return timeValue.UTC().Unix(), true
+	}
+
+	// Handle other types
+	switch left.Type {
+	case ValueString:
+		return e.parseStringTimestamp(left.Str)
+	case ValueNumber:
+		return e.parseNumberTimestamp(left)
+	case ValueBoolean, ValueArray, ValueIdentifier:
+		return 0, false
+	default:
+		return 0, false
+	}
+}
+
+// parseStringTimestamp parses a string as either RFC3339 or Unix timestamp.
+func (e *Evaluator) parseStringTimestamp(str string) (int64, bool) {
+	// Try parsing as RFC 3339 first, convert to UTC
+	if parsedTime, timeErr := time.Parse(time.RFC3339, str); timeErr == nil {
+		return parsedTime.UTC().Unix(), true
+	}
+
+	// Try parsing as Unix timestamp string
+	if unix, unixErr := strconv.ParseInt(str, 10, 64); unixErr == nil {
+		return unix, true
+	}
+
+	return 0, false
+}
+
+// parseNumberTimestamp converts a numeric value to Unix timestamp.
+func (e *Evaluator) parseNumberTimestamp(left *EvalResult) (int64, bool) {
+	if left.IsInt {
+		return left.IntValue, true
+	}
+
+	return int64(left.Num), true
+}
+
+// calculateDaysDiff calculates the difference in days between two Unix timestamps.
+func (e *Evaluator) calculateDaysDiff(nowUnix, fieldUnix int64) float64 {
+	diffSeconds := nowUnix - fieldUnix
+	return float64(diffSeconds) / (hoursPerDay * secondsPerHour)
+}
+
+// compareDateTimeWithNow compares a datetime value with the current time to check if the difference is less than N days.
+func (e *Evaluator) compareDateTimeWithNow(left, right *EvalResult) bool {
+	daysThreshold, ok := e.parseDaysThreshold(right)
+	if !ok {
+		return false
+	}
+
+	fieldUnix, ok := e.extractUnixTimestamp(left)
+	if !ok {
+		return false
+	}
+
+	nowUnix := time.Now().UTC().Unix()
+	daysDiff := e.calculateDaysDiff(nowUnix, fieldUnix)
+
+	return daysDiff < daysThreshold
+}
+
+// compareDateTimeWithNowGreater compares a datetime value with the current time to check if the difference is greater than N days.
+func (e *Evaluator) compareDateTimeWithNowGreater(left, right *EvalResult) bool {
+	daysThreshold, ok := e.parseDaysThreshold(right)
+	if !ok {
+		return false
+	}
+
+	fieldUnix, ok := e.extractUnixTimestamp(left)
+	if !ok {
+		return false
+	}
+
+	nowUnix := time.Now().UTC().Unix()
+	daysDiff := e.calculateDaysDiff(nowUnix, fieldUnix)
+
+	return daysDiff > daysThreshold
 }
 
 // Zero-allocation case-insensitive string comparison functions
