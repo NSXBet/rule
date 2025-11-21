@@ -66,7 +66,7 @@ fuzz: ## Run fuzz tests for comprehensive edge case detection
 # Benchmarking
 bench: ## Run all benchmarks
 	@echo "Running benchmarks..."
-	go test -bench=. -benchmem ./...
+	go test -run=^$$ -bench=. -benchmem ./...
 
 # Code quality and formatting
 format: ## Format code using gofumpt, goimports, and golines

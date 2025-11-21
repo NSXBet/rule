@@ -23,28 +23,24 @@ type EvalResult struct {
 }
 
 // Evaluator is an optimized evaluator that avoids allocations during evaluation.
-type Evaluator struct {
-	context D
-	// Pre-allocated result to reuse
-	result EvalResult
-}
+type Evaluator struct{}
 
 func NewEvaluator() *Evaluator {
 	return &Evaluator{}
 }
 
 func (e *Evaluator) Evaluate(node *ASTNode, context D) (bool, error) {
-	e.context = context
+	var result EvalResult
 
-	err := e.evaluateNode(node, &e.result)
+	err := e.evaluateNode(node, context, &result)
 	if err != nil {
 		return false, err
 	}
 
-	return e.toBool(&e.result), nil
+	return e.toBool(&result), nil
 }
 
-func (e *Evaluator) evaluateNode(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluateNode(node *ASTNode, context D, result *EvalResult) error {
 	result.IsValid = false
 
 	switch node.Type {
@@ -52,16 +48,16 @@ func (e *Evaluator) evaluateNode(node *ASTNode, result *EvalResult) error {
 		return e.evaluateLiteral(node, result)
 
 	case NodeIdentifier:
-		return e.evaluateIdentifier(node, result)
+		return e.evaluateIdentifier(node, context, result)
 
 	case NodeProperty:
-		return e.evaluateProperty(node, result)
+		return e.evaluateProperty(node, context, result)
 
 	case NodeUnaryOp:
-		return e.evaluateUnaryOp(node, result)
+		return e.evaluateUnaryOp(node, context, result)
 
 	case NodeBinaryOp:
-		return e.evaluateBinaryOp(node, result)
+		return e.evaluateBinaryOp(node, context, result)
 
 	case NodeArray:
 		return ErrInvalidNode // Arrays are not directly evaluatable
@@ -97,8 +93,8 @@ func (e *Evaluator) evaluateLiteral(node *ASTNode, result *EvalResult) error {
 	return nil
 }
 
-func (e *Evaluator) evaluateIdentifier(node *ASTNode, result *EvalResult) error {
-	value, exists := e.context[node.Value.StrValue]
+func (e *Evaluator) evaluateIdentifier(node *ASTNode, context D, result *EvalResult) error {
+	value, exists := context[node.Value.StrValue]
 	if !exists {
 		// For missing attributes, return a special "missing" result
 		result.IsValid = false
@@ -113,8 +109,8 @@ func (e *Evaluator) evaluateIdentifier(node *ASTNode, result *EvalResult) error 
 	return nil
 }
 
-func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
-	current := e.context
+func (e *Evaluator) evaluateProperty(node *ASTNode, context D, result *EvalResult) error {
+	current := context
 
 	for _, child := range node.Children {
 		key := child.Value.StrValue
@@ -156,12 +152,12 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, result *EvalResult) error {
 	return nil
 }
 
-func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluateUnaryOp(node *ASTNode, context D, result *EvalResult) error {
 	switch node.Operator {
 	case NOT:
-		return e.evaluateNotOperator(node, result)
+		return e.evaluateNotOperator(node, context, result)
 	case PR:
-		return e.evaluatePresenceOperator(node, result)
+		return e.evaluatePresenceOperator(node, context, result)
 	case DL, DG:
 		// DL and DG are binary operators, not unary
 		result.IsValid = false
@@ -204,14 +200,14 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, result *EvalResult) error {
 	}
 }
 
-func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluateBinaryOp(node *ASTNode, context D, result *EvalResult) error {
 	switch node.Operator {
 	case AND:
-		return e.evaluateLogicalAnd(node, result)
+		return e.evaluateLogicalAnd(node, context, result)
 	case OR:
-		return e.evaluateLogicalOr(node, result)
+		return e.evaluateLogicalOr(node, context, result)
 	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ, DL, DG:
-		return e.evaluateComparisonOperator(node, result)
+		return e.evaluateComparisonOperator(node, context, result)
 	case EOF,
 		IDENTIFIER,
 		STRING,
@@ -234,10 +230,10 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, result *EvalResult) error {
 }
 
 // evaluateNotOperator handles the NOT unary operator.
-func (e *Evaluator) evaluateNotOperator(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluateNotOperator(node *ASTNode, context D, result *EvalResult) error {
 	var operandResult EvalResult
 
-	err := e.evaluateNode(node.Left, &operandResult)
+	err := e.evaluateNode(node.Left, context, &operandResult)
 	if err != nil {
 		return err
 	}
@@ -250,12 +246,12 @@ func (e *Evaluator) evaluateNotOperator(node *ASTNode, result *EvalResult) error
 }
 
 // evaluatePresenceOperator handles the PR (presence) unary operator.
-func (e *Evaluator) evaluatePresenceOperator(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluatePresenceOperator(node *ASTNode, context D, result *EvalResult) error {
 	switch node.Left.Type {
 	case NodeIdentifier:
-		return e.checkIdentifierPresence(node, result)
+		return e.checkIdentifierPresence(node, context, result)
 	case NodeProperty:
-		return e.checkPropertyPresence(node, result)
+		return e.checkPropertyPresence(node, context, result)
 	case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray:
 		return ErrInvalidOperator // Invalid node types for PR operator
 	default:
@@ -264,8 +260,8 @@ func (e *Evaluator) evaluatePresenceOperator(node *ASTNode, result *EvalResult) 
 }
 
 // checkIdentifierPresence checks if a simple identifier exists in the context.
-func (e *Evaluator) checkIdentifierPresence(node *ASTNode, result *EvalResult) error {
-	_, exists := e.context[node.Left.Value.StrValue]
+func (e *Evaluator) checkIdentifierPresence(node *ASTNode, context D, result *EvalResult) error {
+	_, exists := context[node.Left.Value.StrValue]
 	result.Type = ValueBoolean
 	result.Bool = exists
 	result.IsValid = true
@@ -274,8 +270,8 @@ func (e *Evaluator) checkIdentifierPresence(node *ASTNode, result *EvalResult) e
 }
 
 // checkPropertyPresence checks if a nested property exists in the context.
-func (e *Evaluator) checkPropertyPresence(node *ASTNode, result *EvalResult) error {
-	current := e.context
+func (e *Evaluator) checkPropertyPresence(node *ASTNode, context D, result *EvalResult) error {
+	current := context
 
 	for _, child := range node.Left.Children {
 		key := child.Value.StrValue
@@ -310,10 +306,10 @@ func (e *Evaluator) setPresenceResult(result *EvalResult, exists bool) {
 }
 
 // evaluateLogicalAnd handles the AND logical operator with short-circuit evaluation.
-func (e *Evaluator) evaluateLogicalAnd(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluateLogicalAnd(node *ASTNode, context D, result *EvalResult) error {
 	var leftResult EvalResult
 
-	err := e.evaluateNode(node.Left, &leftResult)
+	err := e.evaluateNode(node.Left, context, &leftResult)
 	if err != nil {
 		return err
 	}
@@ -328,7 +324,7 @@ func (e *Evaluator) evaluateLogicalAnd(node *ASTNode, result *EvalResult) error 
 
 	var rightResult EvalResult
 
-	err = e.evaluateNode(node.Right, &rightResult)
+	err = e.evaluateNode(node.Right, context, &rightResult)
 	if err != nil {
 		return err
 	}
@@ -341,10 +337,10 @@ func (e *Evaluator) evaluateLogicalAnd(node *ASTNode, result *EvalResult) error 
 }
 
 // evaluateLogicalOr handles the OR logical operator with short-circuit evaluation.
-func (e *Evaluator) evaluateLogicalOr(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluateLogicalOr(node *ASTNode, context D, result *EvalResult) error {
 	var leftResult EvalResult
 
-	err := e.evaluateNode(node.Left, &leftResult)
+	err := e.evaluateNode(node.Left, context, &leftResult)
 	if err != nil {
 		return err
 	}
@@ -359,7 +355,7 @@ func (e *Evaluator) evaluateLogicalOr(node *ASTNode, result *EvalResult) error {
 
 	var rightResult EvalResult
 
-	err = e.evaluateNode(node.Right, &rightResult)
+	err = e.evaluateNode(node.Right, context, &rightResult)
 	if err != nil {
 		return err
 	}
@@ -372,15 +368,15 @@ func (e *Evaluator) evaluateLogicalOr(node *ASTNode, result *EvalResult) error {
 }
 
 // evaluateComparisonOperator handles all comparison operators.
-func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, result *EvalResult) error {
+func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result *EvalResult) error {
 	var leftResult, rightResult EvalResult
 
-	err := e.evaluateNode(node.Left, &leftResult)
+	err := e.evaluateNode(node.Left, context, &leftResult)
 	if err != nil {
 		return err
 	}
 
-	err = e.evaluateNode(node.Right, &rightResult)
+	err = e.evaluateNode(node.Right, context, &rightResult)
 	if err != nil {
 		return err
 	}

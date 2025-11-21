@@ -122,12 +122,14 @@ func Example_dateTimeOperations() {
 func Example_daysLessOperator() {
 	engine := rule.NewEngine()
 
-	// Sample context with various timestamp formats
+	now := time.Now().UTC()
+	
+	// Sample context with various timestamp formats calculated relative to now
 	context := rule.D{
-		"user_registered":  "2024-07-01T10:00:00Z", // RFC3339 string (over 1 year ago)
-		"last_login":       1722547200,             // Unix timestamp (August 1, 2024 - about 1 year ago)
-		"password_changed": "2025-07-25T15:30:00Z", // Recent RFC3339 (about 1 week ago)
-		"account_created":  "2020-01-01T00:00:00Z", // Old timestamp (5+ years ago)
+		"user_registered":  now.AddDate(-2, 0, 0).Format(time.RFC3339), // 2 years ago
+		"last_login":       now.AddDate(0, 0, -200).Unix(),               // 200 days ago
+		"password_changed": now.AddDate(0, 0, -7).Format(time.RFC3339),   // 7 days ago
+		"account_created":  now.AddDate(-5, 0, 0).Format(time.RFC3339),   // 5 years ago
 	}
 
 	// Check if events happened within specific time ranges from NOW
@@ -160,15 +162,17 @@ func Example_daysLessOperator() {
 func Example_daysLessUseCase() {
 	engine := rule.NewEngine()
 
+	now := time.Now().UTC()
+	
 	// User session and security context
 	context := rule.D{
 		"user": rule.D{
-			"last_login":       "2025-07-31T10:00:00Z",
-			"password_changed": "2025-07-20T09:00:00Z",
+			"last_login":       now.AddDate(0, 0, -10).Format(time.RFC3339), // 10 days ago
+			"password_changed": now.AddDate(0, 0, -20).Format(time.RFC3339),  // 20 days ago
 			"mfa_enabled":      true,
 		},
 		"session": rule.D{
-			"created_at": "2025-08-04T12:00:00Z",
+			"created_at": now.Add(-12 * time.Hour).Format(time.RFC3339), // 12 hours ago (less than 1 day)
 			"ip_address": "192.168.1.100",
 		},
 	}
@@ -211,13 +215,15 @@ func Example_daysLessUseCase() {
 func Example_daysGreaterOperator() {
 	engine := rule.NewEngine()
 
+	now := time.Now().UTC()
+	
 	// Sample context with various timestamp formats (old timestamps)
 	context := rule.D{
-		"account_created":  "2020-01-01T00:00:00Z", // Very old timestamp (5+ years ago)
-		"last_backup":      1577836800,             // Unix timestamp (2020-01-01T00:00:00Z)
-		"system_installed": "2018-06-15T12:00:00Z", // Even older timestamp
-		"recent_update":    "2025-07-25T15:30:00Z", // Recent timestamp
-		"maintenance_done": "2023-12-01T10:00:00Z", // About 1+ year ago
+		"account_created":  now.AddDate(-5, 0, 0).Format(time.RFC3339), // 5 years ago
+		"last_backup":      now.AddDate(-2, 0, 0).Unix(),               // 2 years ago (Unix timestamp)
+		"system_installed": now.AddDate(-6, 0, 0).Format(time.RFC3339), // 6 years ago
+		"recent_update":    now.AddDate(0, 0, -5).Format(time.RFC3339),  // 5 days ago
+		"maintenance_done": now.AddDate(-1, -6, 0).Format(time.RFC3339), // 1.5 years ago
 	}
 
 	// Check if events happened MORE than specific time ranges from NOW
@@ -250,9 +256,11 @@ func Example_daysGreaterOperator() {
 func Example_dlVsDgComparison() {
 	engine := rule.NewEngine()
 
+	now := time.Now().UTC()
+	
 	// Test with the same timestamp for both operators
 	context := rule.D{
-		"event_timestamp": "2023-01-01T00:00:00Z", // About 2+ years ago
+		"event_timestamp": now.AddDate(-2, 0, 0).Format(time.RFC3339), // 2 years ago
 	}
 
 	// DL (days less) checks if timestamp is WITHIN the threshold from NOW
@@ -288,16 +296,18 @@ func Example_dlVsDgComparison() {
 func Example_daysOperatorsUseCase() {
 	engine := rule.NewEngine()
 
+	now := time.Now().UTC()
+	
 	// System maintenance and security context
 	context := rule.D{
 		"system": rule.D{
-			"last_security_scan": "2025-07-29T10:00:00Z", // Recent
-			"last_full_backup":   "2024-12-01T02:00:00Z", // About 8 months ago
-			"os_install_date":    "2020-06-15T00:00:00Z", // Old system
+			"last_security_scan": now.AddDate(0, 0, -3).Format(time.RFC3339),  // 3 days ago
+			"last_full_backup":   now.AddDate(0, -8, 0).Format(time.RFC3339),    // 8 months ago
+			"os_install_date":    now.AddDate(-5, 0, 0).Format(time.RFC3339),   // 5 years ago
 		},
 		"user": rule.D{
-			"password_changed": "2025-07-20T09:00:00Z", // Recent
-			"account_created":  "2019-03-10T12:00:00Z", // Old account
+			"password_changed": now.AddDate(0, 0, -10).Format(time.RFC3339), // 10 days ago
+			"account_created":  now.AddDate(-6, 0, 0).Format(time.RFC3339),  // 6 years ago
 		},
 	}
 
