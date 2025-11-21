@@ -39,16 +39,20 @@ func TestEngine_RaceCondition_BasicQuery(t *testing.T) {
 	// Number of concurrent goroutines
 	numGoroutines := 1000
 	iterationsPerGoroutine := 100
+
 	var wg sync.WaitGroup
+
 	errors := make(chan error, numGoroutines*iterationsPerGoroutine)
 	falseResults := make(chan int, numGoroutines*iterationsPerGoroutine)
 
 	// Launch concurrent goroutines
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
+
 		go func(goroutineID int) {
 			defer wg.Done()
-			for j := 0; j < iterationsPerGoroutine; j++ {
+
+			for j := range iterationsPerGoroutine {
 				// Each goroutine uses a unique context with different customerid
 				// but same skin="betnacional" - should always return true
 				context := D{
@@ -56,8 +60,8 @@ func TestEngine_RaceCondition_BasicQuery(t *testing.T) {
 					"customerid": goroutineID*10000 + j, // Unique customerid per iteration
 				}
 
-				result, err := engine.Evaluate(query, context)
-				if err != nil {
+				result, eerr := engine.Evaluate(query, context)
+				if eerr != nil {
 					errors <- fmt.Errorf("evaluation error in goroutine %d, iteration %d: %w", goroutineID, j, err)
 					continue
 				}
@@ -65,6 +69,7 @@ func TestEngine_RaceCondition_BasicQuery(t *testing.T) {
 				// The query should always return true since skin="betnacional"
 				if !result {
 					falseResults <- goroutineID*10000 + j
+
 					errors <- &RaceConditionError{
 						GoroutineID: goroutineID,
 						Iteration:   j,
@@ -125,15 +130,19 @@ func TestEngine_RaceCondition_DifferentQueries(t *testing.T) {
 
 	numGoroutines := 1000
 	iterationsPerGoroutine := 5000
+
 	var wg sync.WaitGroup
+
 	errors := make(chan error, numGoroutines*iterationsPerGoroutine)
 
 	// Launch concurrent goroutines evaluating different queries
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
+
 		go func(goroutineID int) {
 			defer wg.Done()
-			for j := 0; j < iterationsPerGoroutine; j++ {
+
+			for j := range iterationsPerGoroutine {
 				// Each goroutine evaluates a different query with different context
 				queryIndex := (goroutineID + j) % len(queries)
 				query := queries[queryIndex]
@@ -192,15 +201,19 @@ func TestEngine_RaceCondition_SameQueryDifferentContexts(t *testing.T) {
 
 	numGoroutines := 500
 	iterationsPerGoroutine := 200
+
 	var wg sync.WaitGroup
+
 	errors := make(chan error, numGoroutines*iterationsPerGoroutine)
 
 	// Launch concurrent goroutines with different contexts
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
+
 		go func(goroutineID int) {
 			defer wg.Done()
-			for j := 0; j < iterationsPerGoroutine; j++ {
+
+			for j := range iterationsPerGoroutine {
 				// Each goroutine uses a different customerid
 				// Only customerid=100 should return true
 				customerid := goroutineID*1000 + j
@@ -209,9 +222,10 @@ func TestEngine_RaceCondition_SameQueryDifferentContexts(t *testing.T) {
 					"customerid": customerid,
 				}
 
-				result, err := engine.Evaluate(query, context)
-				if err != nil {
+				result, eerr := engine.Evaluate(query, context)
+				if eerr != nil {
 					errors <- fmt.Errorf("evaluation error in goroutine %d, iteration %d: %w", goroutineID, j, err)
+
 					continue
 				}
 
@@ -238,11 +252,17 @@ func TestEngine_RaceCondition_SameQueryDifferentContexts(t *testing.T) {
 		errorCount++
 	}
 
-	if errorCount > 0 {
-		t.Errorf("❌ RACE CONDITION DETECTED: %d evaluations returned incorrect results", errorCount)
-	} else {
-		t.Logf("✅ No race conditions detected in %d concurrent evaluations with different contexts", numGoroutines*iterationsPerGoroutine)
-	}
+	require.Positive(
+		t,
+		errorCount,
+		"❌ RACE CONDITION DETECTED: %d evaluations returned incorrect results",
+		errorCount,
+	)
+
+	t.Logf(
+		"✅ No race conditions detected in %d concurrent evaluations with different contexts",
+		numGoroutines*iterationsPerGoroutine,
+	)
 
 	require.Equal(t, 0, errorCount, "All evaluations should return correct results")
 }
@@ -253,6 +273,7 @@ func getContextForQuery(query string, goroutineID, iteration int) D {
 	context := D{}
 
 	// Determine skin based on query
+	//nolint:gocritic // reason: test function
 	if strings.Contains(query, "betnacional") {
 		context["skin"] = "betnacional"
 	} else if strings.Contains(query, "betdev") {
@@ -264,6 +285,7 @@ func getContextForQuery(query string, goroutineID, iteration int) D {
 	}
 
 	// Determine customerid based on query
+	//nolint:gocritic // reason: test function
 	if strings.Contains(query, "customerid in [0]") {
 		context["customerid"] = 0
 	} else if strings.Contains(query, "customerid in [171, 273, 612, 179, 504]") {
@@ -316,12 +338,14 @@ func getExpectedResult(query string, context D) bool {
 	if query == `skin eq "webdev" and customerid in [171, 273, 612, 179, 504]` {
 		validIDs := []int{171, 273, 612, 179, 504}
 		valid := false
+
 		for _, id := range validIDs {
 			if customerid == id {
 				valid = true
 				break
 			}
 		}
+
 		return skin == "webdev" && valid
 	}
 

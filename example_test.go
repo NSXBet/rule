@@ -123,13 +123,13 @@ func Example_daysLessOperator() {
 	engine := rule.NewEngine()
 
 	now := time.Now().UTC()
-	
+
 	// Sample context with various timestamp formats calculated relative to now
 	context := rule.D{
 		"user_registered":  now.AddDate(-2, 0, 0).Format(time.RFC3339), // 2 years ago
-		"last_login":       now.AddDate(0, 0, -200).Unix(),               // 200 days ago
-		"password_changed": now.AddDate(0, 0, -7).Format(time.RFC3339),   // 7 days ago
-		"account_created":  now.AddDate(-5, 0, 0).Format(time.RFC3339),   // 5 years ago
+		"last_login":       now.AddDate(0, 0, -200).Unix(),             // 200 days ago
+		"password_changed": now.AddDate(0, 0, -7).Format(time.RFC3339), // 7 days ago
+		"account_created":  now.AddDate(-5, 0, 0).Format(time.RFC3339), // 5 years ago
 	}
 
 	// Check if events happened within specific time ranges from NOW
@@ -163,12 +163,12 @@ func Example_daysLessUseCase() {
 	engine := rule.NewEngine()
 
 	now := time.Now().UTC()
-	
+
 	// User session and security context
 	context := rule.D{
 		"user": rule.D{
 			"last_login":       now.AddDate(0, 0, -10).Format(time.RFC3339), // 10 days ago
-			"password_changed": now.AddDate(0, 0, -20).Format(time.RFC3339),  // 20 days ago
+			"password_changed": now.AddDate(0, 0, -20).Format(time.RFC3339), // 20 days ago
 			"mfa_enabled":      true,
 		},
 		"session": rule.D{
@@ -216,12 +216,12 @@ func Example_daysGreaterOperator() {
 	engine := rule.NewEngine()
 
 	now := time.Now().UTC()
-	
+
 	// Sample context with various timestamp formats (old timestamps)
 	context := rule.D{
-		"account_created":  now.AddDate(-5, 0, 0).Format(time.RFC3339), // 5 years ago
-		"last_backup":      now.AddDate(-2, 0, 0).Unix(),               // 2 years ago (Unix timestamp)
-		"system_installed": now.AddDate(-6, 0, 0).Format(time.RFC3339), // 6 years ago
+		"account_created":  now.AddDate(-5, 0, 0).Format(time.RFC3339),  // 5 years ago
+		"last_backup":      now.AddDate(-2, 0, 0).Unix(),                // 2 years ago (Unix timestamp)
+		"system_installed": now.AddDate(-6, 0, 0).Format(time.RFC3339),  // 6 years ago
 		"recent_update":    now.AddDate(0, 0, -5).Format(time.RFC3339),  // 5 days ago
 		"maintenance_done": now.AddDate(-1, -6, 0).Format(time.RFC3339), // 1.5 years ago
 	}
@@ -257,7 +257,7 @@ func Example_dlVsDgComparison() {
 	engine := rule.NewEngine()
 
 	now := time.Now().UTC()
-	
+
 	// Test with the same timestamp for both operators
 	context := rule.D{
 		"event_timestamp": now.AddDate(-2, 0, 0).Format(time.RFC3339), // 2 years ago
@@ -297,13 +297,13 @@ func Example_daysOperatorsUseCase() {
 	engine := rule.NewEngine()
 
 	now := time.Now().UTC()
-	
+
 	// System maintenance and security context
 	context := rule.D{
 		"system": rule.D{
-			"last_security_scan": now.AddDate(0, 0, -3).Format(time.RFC3339),  // 3 days ago
-			"last_full_backup":   now.AddDate(0, -8, 0).Format(time.RFC3339),    // 8 months ago
-			"os_install_date":    now.AddDate(-5, 0, 0).Format(time.RFC3339),   // 5 years ago
+			"last_security_scan": now.AddDate(0, 0, -3).Format(time.RFC3339), // 3 days ago
+			"last_full_backup":   now.AddDate(0, -8, 0).Format(time.RFC3339), // 8 months ago
+			"os_install_date":    now.AddDate(-5, 0, 0).Format(time.RFC3339), // 5 years ago
 		},
 		"user": rule.D{
 			"password_changed": now.AddDate(0, 0, -10).Format(time.RFC3339), // 10 days ago
