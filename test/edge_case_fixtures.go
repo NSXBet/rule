@@ -224,6 +224,7 @@ var ExtremeValueTests = []Case{
 			for i := range 1000 {
 				arr[i] = i
 			}
+
 			return arr
 		}(),
 	}, true},
