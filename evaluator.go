@@ -111,12 +111,13 @@ func (e *Evaluator) evaluateIdentifier(node *ASTNode, context D, result *EvalRes
 
 func (e *Evaluator) evaluateProperty(node *ASTNode, context D, result *EvalResult) error {
 	current := context
+	lastIdx := len(node.Children) - 1
 
-	for _, child := range node.Children {
+	for i, child := range node.Children {
 		key := child.Value.StrValue
 
 		// Navigate to the next level
-		currentMap, ok := current[key]
+		currentValue, ok := current[key]
 		if !ok {
 			// For missing nested attributes, return invalid result
 			result.IsValid = false
@@ -126,17 +127,30 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, context D, result *EvalResul
 		}
 
 		// If this is the last segment, return the value
-		if child == node.Children[len(node.Children)-1] {
+		if i == lastIdx {
 			result.IsValid = true
-			e.setResultFromAny(result, currentMap)
+			e.setResultFromAny(result, currentValue)
 
 			return nil
 		}
 
 		// Otherwise, continue navigation
-		if nextMap, isMap := currentMap.(map[string]any); isMap {
-			current = nextMap
-		} else {
+		switch v := currentValue.(type) {
+		case map[string]any:
+			current = v
+		case []any:
+			// Array found - check if next segment is "length" and it's the last segment
+			if i+1 == lastIdx && node.Children[i+1].Value.StrValue == lengthProperty {
+				e.setArrayLengthResult(result, len(v))
+				return nil
+			}
+
+			// Invalid - trying to access non-length property on array
+			result.IsValid = false
+			result.Type = ValueString
+
+			return nil
+		default:
 			// For invalid nested access, return invalid result
 			result.IsValid = false
 			result.Type = ValueString // Default type for missing
@@ -150,6 +164,15 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, context D, result *EvalResul
 	result.Type = ValueString
 
 	return nil
+}
+
+// setArrayLengthResult sets the result to the length of an array.
+func (e *Evaluator) setArrayLengthResult(result *EvalResult, length int) {
+	result.Type = ValueNumber
+	result.Num = float64(length)
+	result.IntValue = int64(length)
+	result.IsInt = true
+	result.IsValid = true
 }
 
 func (e *Evaluator) evaluateUnaryOp(node *ASTNode, context D, result *EvalResult) error {
@@ -192,6 +215,9 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, context D, result *EvalResult
 		AQ,
 		AND,
 		OR,
+		ANY,
+		ALL,
+		NONE,
 		EQUALS,
 		NOT_EQUALS:
 		return ErrInvalidOperator // These are not unary operators
@@ -206,6 +232,8 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, context D, result *EvalResul
 		return e.evaluateLogicalAnd(node, context, result)
 	case OR:
 		return e.evaluateLogicalOr(node, context, result)
+	case ANY, ALL, NONE:
+		return e.evaluateQuantifier(node, context, result)
 	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, EQUALS, NOT_EQUALS, DQ, DN, BE, BQ, AF, AQ, DL, DG:
 		return e.evaluateComparisonOperator(node, context, result)
 	case EOF,
@@ -367,6 +395,126 @@ func (e *Evaluator) evaluateLogicalOr(node *ASTNode, context D, result *EvalResu
 	return nil
 }
 
+// evaluateQuantifier handles the ANY, ALL, and NONE list quantifier operators.
+// It iterates over array elements, evaluating the sub-expression against each element's context.
+// Uses short-circuit evaluation: ANY stops on first true, ALL stops on first false.
+func (e *Evaluator) evaluateQuantifier(node *ASTNode, context D, result *EvalResult) error {
+	// Resolve the left operand (must be an array from context)
+	var leftResult EvalResult
+
+	err := e.evaluateNode(node.Left, context, &leftResult)
+	if err != nil {
+		return err
+	}
+
+	result.Type = ValueBoolean
+	result.IsValid = true
+
+	// Must be a valid array
+	if !leftResult.IsValid || leftResult.Type != ValueArray {
+		result.Bool = false
+		return nil
+	}
+
+	arr, ok := leftResult.OriginalValue.([]any)
+	if !ok {
+		result.Bool = false
+		return nil
+	}
+
+	switch node.Operator { //nolint:exhaustive // only quantifier operators are valid here
+	case ANY:
+		result.Bool = e.evaluateQuantifierAny(node.Right, arr)
+	case ALL:
+		result.Bool = e.evaluateQuantifierAll(node.Right, arr)
+	case NONE:
+		result.Bool = e.evaluateQuantifierNone(node.Right, arr)
+	default:
+		result.IsValid = false
+		return ErrInvalidOperator
+	}
+
+	return nil
+}
+
+// evaluateQuantifierAny returns true if any element in the array satisfies the sub-expression.
+// Short-circuits on first match.
+func (e *Evaluator) evaluateQuantifierAny(subExpr *ASTNode, arr []any) bool {
+	var subResult EvalResult
+
+	for _, elem := range arr {
+		elemMap, isMap := elem.(map[string]any)
+		if !isMap {
+			continue
+		}
+
+		subResult.IsValid = false
+		subResult.OriginalValue = nil
+
+		if err := e.evaluateNode(subExpr, elemMap, &subResult); err != nil {
+			continue
+		}
+
+		if e.toBool(&subResult) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// evaluateQuantifierAll returns true if all elements in the array satisfy the sub-expression.
+// Returns true for empty arrays (vacuous truth). Short-circuits on first non-match.
+func (e *Evaluator) evaluateQuantifierAll(subExpr *ASTNode, arr []any) bool {
+	var subResult EvalResult
+
+	for _, elem := range arr {
+		elemMap, isMap := elem.(map[string]any)
+		if !isMap {
+			return false
+		}
+
+		subResult.IsValid = false
+		subResult.OriginalValue = nil
+
+		if err := e.evaluateNode(subExpr, elemMap, &subResult); err != nil {
+			return false
+		}
+
+		if !e.toBool(&subResult) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// evaluateQuantifierNone returns true if no element in the array satisfies the sub-expression.
+// Returns true for empty arrays. Short-circuits on first match.
+func (e *Evaluator) evaluateQuantifierNone(subExpr *ASTNode, arr []any) bool {
+	var subResult EvalResult
+
+	for _, elem := range arr {
+		elemMap, isMap := elem.(map[string]any)
+		if !isMap {
+			continue
+		}
+
+		subResult.IsValid = false
+		subResult.OriginalValue = nil
+
+		if err := e.evaluateNode(subExpr, elemMap, &subResult); err != nil {
+			continue
+		}
+
+		if e.toBool(&subResult) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // evaluateComparisonOperator handles all comparison operators.
 func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result *EvalResult) error {
 	var leftResult, rightResult EvalResult
@@ -476,7 +624,10 @@ func (e *Evaluator) performComparison(
 		PR,
 		AND,
 		OR,
-		NOT:
+		NOT,
+		ANY,
+		ALL,
+		NONE:
 		result.IsValid = false
 		return ErrInvalidOperator
 	default:

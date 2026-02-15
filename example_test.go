@@ -362,6 +362,167 @@ func Example_daysOperatorsUseCase() {
 	// ✅ Established user: true
 }
 
+// Example_arrayLength demonstrates array length operations.
+func Example_arrayLength() {
+	engine := rule.NewEngine()
+
+	context := rule.D{
+		"bet_type": "BET_TYPE_MULTIPLE",
+		"selections": []any{
+			rule.D{"sport": "Football", "odd": 1.5},
+			rule.D{"sport": "Basketball", "odd": 2.3},
+			rule.D{"sport": "Tennis", "odd": 3.1},
+		},
+	}
+
+	rules := []string{
+		`selections.length eq 3`,
+		`selections.length gt 1`,
+		`selections.length le 5`,
+		`bet_type eq "BET_TYPE_MULTIPLE" and selections.length ge 2`,
+	}
+
+	for _, r := range rules {
+		result, err := engine.Evaluate(r, context)
+		if err != nil {
+			fmt.Printf("%s -> error: %v\n", r, err)
+			continue
+		}
+
+		fmt.Printf("%s -> %t\n", r, result)
+	}
+	// Output:
+	// selections.length eq 3 -> true
+	// selections.length gt 1 -> true
+	// selections.length le 5 -> true
+	// bet_type eq "BET_TYPE_MULTIPLE" and selections.length ge 2 -> true
+}
+
+// Example_quantifierAny demonstrates the "any" list quantifier.
+func Example_quantifierAny() {
+	engine := rule.NewEngine()
+
+	context := rule.D{
+		"selections": []any{
+			rule.D{"event_status": "EVENT_STATUS_IN_PROGRESS", "is_live": true, "odd": 1.5},
+			rule.D{"event_status": "EVENT_STATUS_CANCELLED", "is_live": false, "odd": 2.3},
+			rule.D{"event_status": "EVENT_STATUS_FINISHED", "is_live": false, "odd": 3.1},
+		},
+	}
+
+	rules := []string{
+		`selections any (event_status eq "EVENT_STATUS_CANCELLED")`,
+		`selections any (is_live eq true)`,
+		`selections any (odd gt 3.0)`,
+		`selections any (is_live eq true and odd gt 2.0)`,
+	}
+
+	for _, r := range rules {
+		result, err := engine.Evaluate(r, context)
+		if err != nil {
+			fmt.Printf("%s -> error: %v\n", r, err)
+			continue
+		}
+
+		fmt.Printf("%s -> %t\n", r, result)
+	}
+	// Output:
+	// selections any (event_status eq "EVENT_STATUS_CANCELLED") -> true
+	// selections any (is_live eq true) -> true
+	// selections any (odd gt 3.0) -> true
+	// selections any (is_live eq true and odd gt 2.0) -> false
+}
+
+// Example_quantifierAllNone demonstrates "all" and "none" quantifiers.
+func Example_quantifierAllNone() {
+	engine := rule.NewEngine()
+
+	context := rule.D{
+		"selections": []any{
+			rule.D{"sport_name": "Football", "status": "SELECTION_STATUS_WIN"},
+			rule.D{"sport_name": "Football", "status": "SELECTION_STATUS_WIN"},
+			rule.D{"sport_name": "Football", "status": "SELECTION_STATUS_IN_PROGRESS"},
+		},
+	}
+
+	rules := []string{
+		`selections all (sport_name eq "Football")`,
+		`selections all (status eq "SELECTION_STATUS_WIN")`,
+		`selections none (status eq "SELECTION_STATUS_LOSS")`,
+		`selections none (status eq "SELECTION_STATUS_IN_PROGRESS")`,
+	}
+
+	for _, r := range rules {
+		result, err := engine.Evaluate(r, context)
+		if err != nil {
+			fmt.Printf("%s -> error: %v\n", r, err)
+			continue
+		}
+
+		fmt.Printf("%s -> %t\n", r, result)
+	}
+	// Output:
+	// selections all (sport_name eq "Football") -> true
+	// selections all (status eq "SELECTION_STATUS_WIN") -> false
+	// selections none (status eq "SELECTION_STATUS_LOSS") -> true
+	// selections none (status eq "SELECTION_STATUS_IN_PROGRESS") -> false
+}
+
+// Example_bettingRules demonstrates real-world betting validation rules.
+func Example_bettingRules() {
+	engine := rule.NewEngine()
+
+	bet := rule.D{
+		"bet_type":   "BET_TYPE_MULTIPLE",
+		"is_freebet": false,
+		"customer_data": rule.D{
+			"is_vip":      true,
+			"nationality": "BR",
+		},
+		"selections": []any{
+			rule.D{
+				"event_status": "EVENT_STATUS_IN_PROGRESS",
+				"is_live":      true,
+				"odd":          2.5,
+				"sport_name":   "Football",
+				"provider":     "PROVIDER_SPORTRADAR",
+			},
+			rule.D{
+				"event_status": "EVENT_STATUS_NOT_STARTED",
+				"is_live":      false,
+				"odd":          1.8,
+				"sport_name":   "Football",
+				"provider":     "PROVIDER_RAMP",
+			},
+		},
+	}
+
+	validations := []struct {
+		name string
+		rule string
+	}{
+		{"Min selections", `bet_type eq "BET_TYPE_MULTIPLE" and selections.length ge 2`},
+		{"No cancelled events", `selections none (event_status eq "EVENT_STATUS_CANCELLED")`},
+		{"VIP with live bet", `customer_data.is_vip eq true and selections any (is_live eq true)`},
+		{"All Football", `selections all (sport_name eq "Football")`},
+	}
+
+	for _, v := range validations {
+		result, err := engine.Evaluate(v.rule, bet)
+		if err != nil {
+			fmt.Printf("%s: error: %v\n", v.name, err)
+			continue
+		}
+
+		fmt.Printf("%s: %t\n", v.name, result)
+	}
+	// Output:
+	// Min selections: true
+	// No cancelled events: true
+	// VIP with live bet: true
+	// All Football: true
+}
+
 // Example_compatibility shows compatibility with nikunjy/rules.
 func Example_compatibility() {
 	// Context that works with both libraries

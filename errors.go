@@ -46,4 +46,15 @@ var (
 	ErrEmptyParentheses = &EngineError{"EMPTY_PARENTHESES", "Empty parentheses are not allowed"}
 	ErrUnbalancedParens = &EngineError{"UNBALANCED_PARENTHESES", "Unbalanced parentheses"}
 	ErrTrailingTokens   = &EngineError{"TRAILING_TOKENS", "Unexpected tokens after complete expression"}
+
+	// ErrQuantifierRequiresParens indicates a quantifier operator used without parenthesized sub-expression.
+	ErrQuantifierRequiresParens = &EngineError{
+		"QUANTIFIER_REQUIRES_PARENS",
+		"Quantifier operators (any/all/none) require a parenthesized sub-expression",
+	}
+	// ErrInvalidQuantifierTarget indicates a quantifier used on a non-identifier/property operand.
+	ErrInvalidQuantifierTarget = &EngineError{
+		"INVALID_QUANTIFIER_TARGET",
+		"Quantifier operators (any/all/none) can only be used with identifiers or properties",
+	}
 )

@@ -44,6 +44,11 @@ const (
 	OR
 	NOT
 
+	// ANY represents the "any" list quantifier operator.
+	ANY  // any element matches
+	ALL  // all elements match
+	NONE // no element matches
+
 	// EQUALS is an alias for the equality operator.
 	EQUALS     // ==
 	NOT_EQUALS //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
@@ -82,6 +87,9 @@ var keywordMap = map[string]TokenType{
 	"and":      AND,
 	"or":       OR,
 	"not":      NOT,
+	"any":      ANY,
+	"all":      ALL,
+	"none":     NONE,
 	trueString: BOOLEAN,
 	"false":    BOOLEAN,
 }
@@ -122,6 +130,9 @@ var tokenStringMap = map[TokenType]string{
 	AND:         "and",
 	OR:          "or",
 	NOT:         "not",
+	ANY:         "any",
+	ALL:         "all",
+	NONE:        "none",
 	EQUALS:      "==",
 	NOT_EQUALS:  "!=",
 }

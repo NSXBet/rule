@@ -51,6 +51,8 @@ func validateBinaryOperation(node *ASTNode) error {
 		return validateInOperation(node)
 	case CO, SW, EW:
 		return validateStringOperation(node)
+	case ANY, ALL, NONE:
+		return validateQuantifierOperation(node)
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE, PR,
 		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS:
@@ -71,7 +73,8 @@ func validateUnaryOperation(node *ASTNode) error {
 		return validatePresenceOperation(node)
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE,
-		CO, SW, EW, IN, NOT_IN, DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS:
+		CO, SW, EW, IN, NOT_IN, DQ, DN, BE, BQ, AF, AQ, DL, DG,
+		AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS:
 		// Other operators don't apply to unary operations
 		return nil
 	}
@@ -118,6 +121,17 @@ func validateStringOperation(node *ASTNode) error {
 		}
 	}
 
+	return nil
+}
+
+func validateQuantifierOperation(node *ASTNode) error {
+	// Quantifier operators (any/all/none) should only work on identifiers or properties
+	operand := node.Left
+	if operand.Type != NodeIdentifier && operand.Type != NodeProperty {
+		return ErrInvalidQuantifierTarget
+	}
+
+	// Right operand (sub-expression) is validated recursively by the caller
 	return nil
 }
 

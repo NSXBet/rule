@@ -40,9 +40,14 @@ var AdditionalEdgeCaseTests = []Case{
 	}, true},
 
 	// Performance edge cases
-	{"very_long_string", `text co "needle"`, rule.D{
-		"text": "This is a very long string that contains the word needle somewhere in the middle of all this text that goes on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on",
-	}, true},
+	{
+		"very_long_string",
+		`text co "needle"`,
+		rule.D{
+			"text": "This is a very long string that contains the word needle somewhere in the middle of all this text that goes on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on",
+		},
+		true,
+	},
 
 	// Empty string edge cases
 	{"empty_string_contains_empty", `x co ""`, rule.D{"x": "hello"}, true},

@@ -58,6 +58,14 @@ func TestRulesRound1(t *testing.T) {
 
 		// Comprehensive datetime tests
 		DateTimeComprehensiveTests,
+
+		// List operation tests (length, any, all, none)
+		ArrayLengthTests,
+		QuantifierAnyTests,
+		QuantifierAllTests,
+		QuantifierNoneTests,
+		ListRealWorldTests,
+		NestedListTests,
 	}
 
 	for _, group := range all {

@@ -163,6 +163,11 @@ func (p *Parser) parseComparisonExpression() (*ASTNode, error) {
 		return NewBinaryOpNode(op, left, right), nil
 	}
 
+	// Check for quantifier operators (any/all/none)
+	if p.isQuantifierOperator(p.curToken.Type) {
+		return p.parseQuantifierExpression(left)
+	}
+
 	// Check for missing operator - if we have another value without an operator, that's an error
 	if p.isValue(p.curToken.Type) {
 		return nil, ErrMissingOperator
@@ -249,6 +254,9 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 		AND,
 		OR,
 		NOT,
+		ANY,
+		ALL,
+		NONE,
 		EQUALS,
 		NOT_EQUALS:
 		return nil, fmt.Errorf("unexpected token %s at position %d", p.curToken.Type, p.current)
@@ -335,6 +343,9 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 				AND,
 				OR,
 				NOT,
+				ANY,
+				ALL,
+				NONE,
 				EQUALS,
 				NOT_EQUALS:
 				return nil, fmt.Errorf("unexpected token in array: %s", p.curToken.Type)
@@ -379,6 +390,41 @@ func (p *Parser) parseIdentifierOrProperty() (*ASTNode, error) {
 	return NewPropertyNode(path), nil
 }
 
+func (p *Parser) parseQuantifierExpression(left *ASTNode) (*ASTNode, error) {
+	op := p.curToken.Type
+	p.advance()
+
+	if p.curToken.Type != PAREN_OPEN {
+		return nil, ErrQuantifierRequiresParens
+	}
+
+	p.advance()
+
+	if p.curToken.Type == PAREN_CLOSE {
+		return nil, ErrEmptyParentheses
+	}
+
+	subExpr, err := p.parseExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	if expectErr := p.expect(PAREN_CLOSE); expectErr != nil {
+		return nil, expectErr
+	}
+
+	return NewBinaryOpNode(op, left, subExpr), nil
+}
+
+func (p *Parser) isQuantifierOperator(tokenType TokenType) bool {
+	switch tokenType { //nolint:exhaustive // only checking quantifier tokens
+	case ANY, ALL, NONE:
+		return true
+	default:
+		return false
+	}
+}
+
 func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 	switch tokenType {
 	case EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, PR, DQ, DN, BE, BQ, AF, AQ, DL, DG, EQUALS, NOT_EQUALS:
@@ -396,7 +442,10 @@ func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 		COMMA,
 		AND,
 		OR,
-		NOT:
+		NOT,
+		ANY,
+		ALL,
+		NONE:
 		return false
 	default:
 		return false
@@ -409,7 +458,7 @@ func (p *Parser) isValue(tokenType TokenType) bool {
 		return true
 	case EOF, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
 		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, PR,
-		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS:
+		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS:
 		return false
 	default:
 		return false

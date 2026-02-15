@@ -27,3 +27,9 @@ const (
 	// trueString represents the string "true".
 	trueString = "true"
 )
+
+// Property accessor constants.
+const (
+	// lengthProperty is the special property name for array length access.
+	lengthProperty = "length"
+)
