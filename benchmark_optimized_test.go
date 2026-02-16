@@ -13,6 +13,14 @@ func BenchmarkOptimizedEngineSimple(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs != 0 {
+		b.Fatalf("expected 0 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -37,6 +45,14 @@ func BenchmarkOptimizedEngineComplex(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs != 0 {
+		b.Fatalf("expected 0 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -54,6 +70,14 @@ func BenchmarkOptimizedEngineStringOps(b *testing.B) {
 
 	// Pre-compile rule
 	engine.AddQuery(rule)
+
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs != 0 {
+		b.Fatalf("expected 0 allocs/op, got %f", allocs)
+	}
 
 	b.ResetTimer()
 
@@ -75,6 +99,15 @@ func BenchmarkOptimizedEngineInOperator(b *testing.B) {
 
 	// Pre-compile rule
 	engine.AddQuery(rule)
+
+	b.ReportAllocs()
+
+	// 1 alloc (24 B) from []any interface boxing in Go runtime.
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs > 1 {
+		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
+	}
 
 	b.ResetTimer()
 
@@ -102,6 +135,14 @@ func BenchmarkOptimizedEngineNestedProps(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs != 0 {
+		b.Fatalf("expected 0 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -116,6 +157,14 @@ func BenchmarkOptimizedStandalone(b *testing.B) {
 	engine := NewEngine()
 	ctx := D{"x": 10}
 	rule := "x eq 10"
+
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs != 0 {
+		b.Fatalf("expected 0 allocs/op, got %f", allocs)
+	}
 
 	b.ResetTimer()
 
@@ -142,6 +191,14 @@ func BenchmarkOptimizedEngineArrayLength(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs != 0 {
+		b.Fatalf("expected 0 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -152,7 +209,7 @@ func BenchmarkOptimizedEngineArrayLength(b *testing.B) {
 	}
 }
 
-// Benchmark any quantifier evaluation for zero allocations.
+// Benchmark any quantifier evaluation (1 alloc, 24 B from []any interface boxing).
 func BenchmarkOptimizedEngineQuantifierAny(b *testing.B) {
 	engine := NewEngine()
 	ctx := D{
@@ -167,6 +224,15 @@ func BenchmarkOptimizedEngineQuantifierAny(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	// 1 alloc (24 B) from []any interface boxing in Go runtime.
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs > 1 {
+		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -177,7 +243,7 @@ func BenchmarkOptimizedEngineQuantifierAny(b *testing.B) {
 	}
 }
 
-// Benchmark all quantifier evaluation for zero allocations.
+// Benchmark all quantifier evaluation (1 alloc, 24 B from []any interface boxing).
 func BenchmarkOptimizedEngineQuantifierAll(b *testing.B) {
 	engine := NewEngine()
 	ctx := D{
@@ -192,6 +258,15 @@ func BenchmarkOptimizedEngineQuantifierAll(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	// 1 alloc (24 B) from []any interface boxing in Go runtime.
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs > 1 {
+		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -202,7 +277,7 @@ func BenchmarkOptimizedEngineQuantifierAll(b *testing.B) {
 	}
 }
 
-// Benchmark none quantifier evaluation for zero allocations.
+// Benchmark none quantifier evaluation (1 alloc, 24 B from []any interface boxing).
 func BenchmarkOptimizedEngineQuantifierNone(b *testing.B) {
 	engine := NewEngine()
 	ctx := D{
@@ -216,6 +291,15 @@ func BenchmarkOptimizedEngineQuantifierNone(b *testing.B) {
 
 	// Pre-compile rule
 	engine.AddQuery(rule)
+
+	b.ReportAllocs()
+
+	// 1 alloc (24 B) from []any interface boxing in Go runtime.
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs > 1 {
+		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
+	}
 
 	b.ResetTimer()
 
@@ -256,6 +340,15 @@ func BenchmarkOptimizedEngineComplexBetting(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	// Multiple allocs expected from []any interface boxing (one per quantifier).
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs > 2 {
+		b.Fatalf("expected <= 2 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -284,6 +377,15 @@ func BenchmarkOptimizedEngineQuantifierAnyShortCircuit(b *testing.B) {
 	// Pre-compile rule
 	engine.AddQuery(rule)
 
+	b.ReportAllocs()
+
+	// 1 alloc (24 B) from []any interface boxing in Go runtime.
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(rule, ctx)
+	}); allocs > 1 {
+		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
+	}
+
 	b.ResetTimer()
 
 	for range b.N {
@@ -301,6 +403,14 @@ func BenchmarkZeroAllocEvaluatorDirect(b *testing.B) {
 		NewIdentifierNode("x"),
 		NewNumberLiteralNode(10))
 	ctx := D{"x": 10}
+
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = evaluator.Evaluate(ast, ctx)
+	}); allocs != 0 {
+		b.Fatalf("expected 0 allocs/op, got %f", allocs)
+	}
 
 	b.ResetTimer()
 

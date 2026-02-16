@@ -40,7 +40,7 @@ The entire specification is defined through comprehensive test cases in `test/fi
 
 ### Rule Syntax Examples
 
-```
+```text
 x eq 10                                          // equality
 score gt 100 and level lt 5                      // logical operations
 city co "York"                                   // string contains
