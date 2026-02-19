@@ -35,18 +35,25 @@ The entire specification is defined through comprehensive test cases in `test/fi
 - **Logical**: `not`, `and`, `or` with proper nesting
 - **Attribute Comparisons**: Both flat and nested property comparisons
 - **Nested Attributes**: Deep object navigation with dot notation
+- **Array Length**: `.length` accessor for array size checks
+- **List Quantifiers**: `any`, `all`, `none` operators for element-level conditions
 
 ### Rule Syntax Examples
 
-```
-x eq 10                           // equality
-score gt 100 and level lt 5       // logical operations
-city co "York"                    // string contains
-color in ["red","green","blue"]   // membership
-user.profile.age ge 18            // nested attributes
-not (status eq "inactive")        // negation
-created_at dl 30                  // within last 30 days
-updated_at dg 365                 // older than 365 days
+```text
+x eq 10                                          // equality
+score gt 100 and level lt 5                      // logical operations
+city co "York"                                   // string contains
+color in ["red","green","blue"]                  // membership
+user.profile.age ge 18                           // nested attributes
+not (status eq "inactive")                       // negation
+created_at dl 30                                 // within last 30 days
+updated_at dg 365                                // older than 365 days
+items.length gt 3                                // array length
+selections any (status eq "cancelled")           // any element matches
+selections all (is_valid eq true)                // all elements match
+selections none (is_fraud eq true)               // no element matches
+items any (price gt 100 and in_stock eq true)    // compound sub-expression
 ```
 
 ## Development Commands
@@ -111,11 +118,20 @@ All functionality is validated through the comprehensive test suite in `test/fix
 - **Membership Operations**: Use strict type checking (no cross-type matching)
 - **Large Integer Support**: Preserve precision for integers > 2^53 using dual storage
 
+### List Operations
+- **Array Length**: Access `.length` on array properties (e.g., `items.length gt 3`)
+- **Quantifier `any`**: True if any element matches the sub-expression (short-circuits on first match)
+- **Quantifier `all`**: True if all elements match (vacuous truth for empty arrays, short-circuits on first non-match)
+- **Quantifier `none`**: True if no element matches (true for empty arrays, short-circuits on first match)
+- **Sub-expressions**: Quantifiers support full expressions including `and`, `or`, `not`, all comparison operators
+- **Nested access**: Works with nested properties (e.g., `data.items any (status eq "active")`)
+- **Reserved words**: `any`, `all`, `none` are reserved keywords (cannot be used as field names)
+
 ### Zero-Allocation Implementation
 - **EvalResult Structure**: Pre-allocated typed result structure to avoid interface boxing
 - **Memory Reuse**: Single evaluator instance with reusable result buffer
 - **AST Caching**: Pre-compiled rules stored in lock-free concurrent map
-- **Allocation Verification**: All benchmarks must show 0 allocs/op
+- **Allocation Verification**: All benchmarks must show 0 allocs/op (array operations may have 1 alloc from Go runtime `[]any` handling)
 
 ### Performance Benchmarking
 - **Baseline Comparison**: Must outperform nikunjy/rules by 100x minimum

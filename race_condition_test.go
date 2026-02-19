@@ -182,7 +182,10 @@ func TestEngine_RaceCondition_DifferentQueries(t *testing.T) {
 	if errorCount > 0 {
 		t.Errorf("❌ RACE CONDITION DETECTED: %d evaluations returned incorrect results", errorCount)
 	} else {
-		t.Logf("✅ No race conditions detected in %d concurrent mixed query evaluations", numGoroutines*iterationsPerGoroutine)
+		t.Logf(
+			"✅ No race conditions detected in %d concurrent mixed query evaluations",
+			numGoroutines*iterationsPerGoroutine,
+		)
 	}
 
 	require.Equal(t, 0, errorCount, "All evaluations should return correct results")
@@ -252,19 +255,14 @@ func TestEngine_RaceCondition_SameQueryDifferentContexts(t *testing.T) {
 		errorCount++
 	}
 
-	require.Positive(
-		t,
-		errorCount,
-		"❌ RACE CONDITION DETECTED: %d evaluations returned incorrect results",
-		errorCount,
+	require.Equal(t, 0, errorCount,
+		"❌ RACE CONDITION DETECTED: %d evaluations returned incorrect results", errorCount,
 	)
 
 	t.Logf(
 		"✅ No race conditions detected in %d concurrent evaluations with different contexts",
 		numGoroutines*iterationsPerGoroutine,
 	)
-
-	require.Equal(t, 0, errorCount, "All evaluations should return correct results")
 }
 
 // Helper functions
