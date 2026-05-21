@@ -421,3 +421,75 @@ func BenchmarkZeroAllocEvaluatorDirect(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkWhereCount validates near-zero allocations for "where (...).length" rules.
+// 1 alloc (24 B) from []any interface boxing in Go runtime.
+func BenchmarkWhereCount(b *testing.B) {
+	engine := NewEngine()
+	ctx := D{
+		"selections": []any{
+			D{"odd": 1.5},
+			D{"odd": 2.0},
+			D{"odd": 1.4},
+			D{"odd": 1.8},
+			D{"odd": 1.0},
+		},
+	}
+	query := "selections where (odd ge 1.4).length ge 4"
+
+	if err := engine.AddQuery(query); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(query, ctx)
+	}); allocs > 1 {
+		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
+	}
+
+	b.ResetTimer()
+
+	for range b.N {
+		result, err := engine.Evaluate(query, ctx)
+		if err != nil || !result {
+			b.Fatalf("Expected true result, got %v, %v", result, err)
+		}
+	}
+}
+
+// BenchmarkWhereWithQuantifier validates near-zero allocations for "where (...) any (...)" rules.
+// 1 alloc (24 B) from []any interface boxing in Go runtime.
+func BenchmarkWhereWithQuantifier(b *testing.B) {
+	engine := NewEngine()
+	ctx := D{
+		"selections": []any{
+			D{"odd": 1.5, "provider": "Y"},
+			D{"odd": 2.0, "provider": "X"},
+			D{"odd": 1.0, "provider": "X"},
+		},
+	}
+	query := `selections where (odd ge 1.4) any (provider eq "X")`
+
+	if err := engine.AddQuery(query); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+
+	if allocs := testing.AllocsPerRun(1, func() {
+		_, _ = engine.Evaluate(query, ctx)
+	}); allocs > 1 {
+		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
+	}
+
+	b.ResetTimer()
+
+	for range b.N {
+		result, err := engine.Evaluate(query, ctx)
+		if err != nil || !result {
+			b.Fatalf("Expected true result, got %v, %v", result, err)
+		}
+	}
+}

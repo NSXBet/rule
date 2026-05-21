@@ -1,6 +1,7 @@
 package rule
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -336,5 +337,103 @@ func TestParserPresenceOperator(t *testing.T) {
 
 	if ast.Operator != PR {
 		t.Error("Expected PR operator")
+	}
+}
+
+// Test parser with where + length.
+func TestParserWhereLength(t *testing.T) {
+	ast, err := ParseRule("selections where (odd ge 1.4).length ge 4")
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Top must be a binary op (ge)
+	if ast.Type != NodeBinaryOp || ast.Operator != GE {
+		t.Fatalf("Expected top-level GE binary op, got %v / %v", ast.Type, ast.Operator)
+	}
+
+	// Left must be a NodeWhereCount
+	if ast.Left.Type != NodeWhereCount {
+		t.Errorf("Expected left to be NodeWhereCount, got %v", ast.Left.Type)
+	}
+
+	// Source of where must be identifier "selections"
+	if ast.Left.Left.Type != NodeIdentifier || ast.Left.Left.Value.StrValue != "selections" {
+		t.Error("Expected where source to be identifier 'selections'")
+	}
+
+	// Predicate must be a binary op
+	if len(ast.Left.Children) != 1 || ast.Left.Children[0].Type != NodeBinaryOp {
+		t.Error("Expected where predicate to be a binary op")
+	}
+}
+
+// Test parser with where + any (rewriting).
+func TestParserWhereWithAny(t *testing.T) {
+	ast, err := ParseRule(`selections where (odd ge 1.4) any (provider eq "X")`)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Top must be ANY quantifier
+	if ast.Type != NodeBinaryOp || ast.Operator != ANY {
+		t.Fatalf("Expected top-level ANY, got %v / %v", ast.Type, ast.Operator)
+	}
+
+	// Left must be the original source identifier
+	if ast.Left.Type != NodeIdentifier || ast.Left.Value.StrValue != "selections" {
+		t.Errorf("Expected source to be identifier 'selections', got %v", ast.Left.Type)
+	}
+
+	// Right must be a composed AND of (predicate, subExpr)
+	if ast.Right.Type != NodeBinaryOp || ast.Right.Operator != AND {
+		t.Error("Expected right to be a composed AND expression")
+	}
+}
+
+// Test parser with where + all (rewriting).
+func TestParserWhereWithAll(t *testing.T) {
+	ast, err := ParseRule(`selections where (odd ge 1.4) all (is_live eq true)`)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Top must be ALL quantifier
+	if ast.Type != NodeBinaryOp || ast.Operator != ALL {
+		t.Fatalf("Expected top-level ALL, got %v / %v", ast.Type, ast.Operator)
+	}
+
+	// Right must be a composed OR of (NOT predicate, subExpr)
+	if ast.Right.Type != NodeBinaryOp || ast.Right.Operator != OR {
+		t.Error("Expected right to be a composed OR expression for ALL rewrite")
+	}
+
+	if ast.Right.Left.Type != NodeUnaryOp || ast.Right.Left.Operator != NOT {
+		t.Error("Expected first part of OR to be NOT (predicate)")
+	}
+}
+
+// Test parser where errors.
+func TestParserWhereErrors(t *testing.T) {
+	tests := []struct {
+		input   string
+		wantErr error
+	}{
+		{"selections where odd ge 1.4", ErrWhereRequiresParens},
+		{"selections where ()", ErrEmptyWherePredicate},
+		{"selections where (odd ge 1.4)", ErrWhereRequiresLengthOrQuantifier},
+		{"selections where (odd ge 1.4).foo", ErrWhereRequiresLength},
+	}
+
+	for _, tt := range tests {
+		_, err := ParseRule(tt.input)
+		if err == nil {
+			t.Errorf("Input %q: expected error %v, got nil", tt.input, tt.wantErr)
+			continue
+		}
+
+		if !errors.Is(err, tt.wantErr) {
+			t.Errorf("Input %q: expected error %v, got %v", tt.input, tt.wantErr, err)
+		}
 	}
 }

@@ -57,4 +57,25 @@ var (
 		"INVALID_QUANTIFIER_TARGET",
 		"Quantifier operators (any/all/none) can only be used with identifiers or properties",
 	}
+
+	// ErrWhereRequiresParens indicates where used without parenthesized predicate.
+	ErrWhereRequiresParens = &EngineError{
+		"WHERE_REQUIRES_PARENS",
+		"where operator requires a parenthesized predicate",
+	}
+	// ErrWhereRequiresLengthOrQuantifier indicates where without .length or quantifier after.
+	ErrWhereRequiresLengthOrQuantifier = &EngineError{
+		"WHERE_REQUIRES_LENGTH_OR_QUANTIFIER",
+		"where expression must be followed by .length or a quantifier (any/all/none)",
+	}
+	// ErrEmptyWherePredicate indicates where with empty predicate.
+	ErrEmptyWherePredicate = &EngineError{
+		"EMPTY_WHERE_PREDICATE",
+		"where predicate cannot be empty",
+	}
+	// ErrWhereRequiresLength indicates where followed by non-length property.
+	ErrWhereRequiresLength = &EngineError{
+		"WHERE_REQUIRES_LENGTH",
+		"where can only be followed by .length",
+	}
 )

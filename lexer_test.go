@@ -51,6 +51,13 @@ func TestLexerTokenization(t *testing.T) {
 		{"x and y", []TokenType{IDENTIFIER, AND, IDENTIFIER, EOF}},
 		{"x or y", []TokenType{IDENTIFIER, OR, IDENTIFIER, EOF}},
 		{"not x", []TokenType{NOT, IDENTIFIER, EOF}},
+		{
+			"items where (x eq 1).length",
+			[]TokenType{
+				IDENTIFIER, WHERE, PAREN_OPEN, IDENTIFIER, EQ, NUMBER, PAREN_CLOSE,
+				DOT, IDENTIFIER, EOF,
+			},
+		},
 	}
 
 	for _, test := range tests {

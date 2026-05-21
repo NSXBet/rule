@@ -62,6 +62,9 @@ func (e *Evaluator) evaluateNode(node *ASTNode, context D, result *EvalResult) e
 	case NodeArray:
 		return ErrInvalidNode // Arrays are not directly evaluatable
 
+	case NodeWhereCount:
+		return e.evaluateWhereCount(node, context, result)
+
 	default:
 		return ErrInvalidNode
 	}
@@ -219,7 +222,8 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, context D, result *EvalResult
 		ALL,
 		NONE,
 		EQUALS,
-		NOT_EQUALS:
+		NOT_EQUALS,
+		WHERE:
 		return ErrInvalidOperator // These are not unary operators
 	default:
 		return ErrInvalidOperator
@@ -248,7 +252,8 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, context D, result *EvalResul
 		DOT,
 		COMMA,
 		PR,
-		NOT:
+		NOT,
+		WHERE:
 		result.IsValid = false
 		return ErrInvalidOperator // These are not binary operators
 	default:
@@ -280,7 +285,7 @@ func (e *Evaluator) evaluatePresenceOperator(node *ASTNode, context D, result *E
 		return e.checkIdentifierPresence(node, context, result)
 	case NodeProperty:
 		return e.checkPropertyPresence(node, context, result)
-	case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray:
+	case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray, NodeWhereCount:
 		return ErrInvalidOperator // Invalid node types for PR operator
 	default:
 		return ErrInvalidOperator
@@ -331,6 +336,67 @@ func (e *Evaluator) setPresenceResult(result *EvalResult, exists bool) {
 	result.Type = ValueBoolean
 	result.Bool = exists
 	result.IsValid = true
+}
+
+// evaluateWhereCount evaluates "<source> where (<predicate>).length".
+// It counts elements in the source array where the predicate evaluates to true.
+// Zero allocation: only uses stack variables, no new slice allocation.
+func (e *Evaluator) evaluateWhereCount(node *ASTNode, context D, result *EvalResult) error {
+	result.IsValid = true
+	result.Type = ValueNumber
+	result.IsInt = true
+	result.Num = 0
+	result.IntValue = 0
+	result.Bool = false
+	result.Str = ""
+	result.Arr = nil
+
+	// Evaluate source to get the array
+	var sourceResult EvalResult
+	if err := e.evaluateNode(node.Left, context, &sourceResult); err != nil {
+		// Source evaluation error: surface as count 0
+		return nil //nolint:nilerr // intentionally swallowing source errors
+	}
+
+	// If source is not valid or not an array, return count 0
+	if !sourceResult.IsValid || sourceResult.Type != ValueArray {
+		return nil
+	}
+
+	// Get the array from OriginalValue
+	arr, ok := sourceResult.OriginalValue.([]any)
+	if !ok {
+		return nil
+	}
+
+	// Count elements that satisfy predicate
+	predicate := node.Children[0]
+	count := int64(0)
+
+	var predicateResult EvalResult
+
+	for _, elem := range arr {
+		elemMap, isMap := elem.(map[string]any)
+		if !isMap {
+			continue
+		}
+
+		predicateResult.IsValid = false
+		predicateResult.OriginalValue = nil
+
+		if predErr := e.evaluateNode(predicate, elemMap, &predicateResult); predErr != nil {
+			continue // Skip element if predicate evaluation fails
+		}
+
+		if e.toBool(&predicateResult) {
+			count++
+		}
+	}
+
+	result.Num = float64(count)
+	result.IntValue = count
+
+	return nil
 }
 
 // evaluateLogicalAnd handles the AND logical operator with short-circuit evaluation.
@@ -627,7 +693,8 @@ func (e *Evaluator) performComparison(
 		NOT,
 		ANY,
 		ALL,
-		NONE:
+		NONE,
+		WHERE:
 		result.IsValid = false
 		return ErrInvalidOperator
 	default:

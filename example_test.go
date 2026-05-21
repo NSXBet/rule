@@ -468,6 +468,46 @@ func Example_quantifierAllNone() {
 	// selections none (status eq "SELECTION_STATUS_IN_PROGRESS") -> false
 }
 
+// Example_whereFilter demonstrates the where operator for filtering arrays.
+// where (predicate).length counts elements that match the predicate.
+// where (predicate) any/all/none (subexpr) applies a quantifier on the filtered subset.
+func Example_whereFilter() {
+	engine := rule.NewEngine()
+
+	context := rule.D{
+		"selections": []any{
+			rule.D{"odd": 1.5, "is_live": true},
+			rule.D{"odd": 2.0, "is_live": false},
+			rule.D{"odd": 1.4, "is_live": true},
+			rule.D{"odd": 1.8, "is_live": true},
+			rule.D{"odd": 1.0, "is_live": false},
+		},
+	}
+
+	rules := []string{
+		// Count selections with odd >= 1.4 — must be at least 4
+		"selections where (odd ge 1.4).length ge 4",
+		// Among selections with odd >= 1.4, all must be live
+		"selections where (odd ge 1.4) all (is_live eq true)",
+		// No selection with odd >= 1.4 should be non-live
+		"selections where (odd ge 1.4) none (is_live eq false)",
+	}
+
+	for _, r := range rules {
+		result, err := engine.Evaluate(r, context)
+		if err != nil {
+			fmt.Printf("%s -> error: %v\n", r, err)
+			continue
+		}
+
+		fmt.Printf("%s -> %t\n", r, result)
+	}
+	// Output:
+	// selections where (odd ge 1.4).length ge 4 -> true
+	// selections where (odd ge 1.4) all (is_live eq true) -> false
+	// selections where (odd ge 1.4) none (is_live eq false) -> false
+}
+
 // Example_bettingRules demonstrates real-world betting validation rules.
 func Example_bettingRules() {
 	engine := rule.NewEngine()

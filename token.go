@@ -52,6 +52,9 @@ const (
 	// EQUALS is an alias for the equality operator.
 	EQUALS     // ==
 	NOT_EQUALS //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
+
+	// WHERE represents the list filtering operator.
+	WHERE
 )
 
 type Token struct {
@@ -90,6 +93,7 @@ var keywordMap = map[string]TokenType{
 	"any":      ANY,
 	"all":      ALL,
 	"none":     NONE,
+	"where":    WHERE,
 	trueString: BOOLEAN,
 	"false":    BOOLEAN,
 }
@@ -133,6 +137,7 @@ var tokenStringMap = map[TokenType]string{
 	ANY:         "any",
 	ALL:         "all",
 	NONE:        "none",
+	WHERE:       "where",
 	EQUALS:      "==",
 	NOT_EQUALS:  "!=",
 }

@@ -1285,3 +1285,244 @@ var NestedListTests = []Case{
 		true,
 	},
 }
+
+/* ---------- Where filter operator ---------- */
+
+//nolint:gochecknoglobals // Test data
+var WhereTests = []Case{
+	// Basic where + length
+	{
+		"where_length_ge_match",
+		"selections where (odd ge 1.4).length ge 4",
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5},
+				rule.D{"odd": 2.0},
+				rule.D{"odd": 1.4},
+				rule.D{"odd": 1.8},
+				rule.D{"odd": 1.0},
+			},
+		},
+		true,
+	},
+	{
+		"where_length_ge_no_match",
+		"selections where (odd ge 1.4).length ge 4",
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5},
+				rule.D{"odd": 2.0},
+				rule.D{"odd": 1.0},
+			},
+		},
+		false,
+	},
+	{
+		"where_length_eq_zero",
+		"selections where (odd ge 5.0).length eq 0",
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5},
+				rule.D{"odd": 2.0},
+			},
+		},
+		true,
+	},
+	{
+		"where_length_gt_zero",
+		"selections where (odd ge 1.0).length gt 0",
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5},
+				rule.D{"odd": 2.0},
+			},
+		},
+		true,
+	},
+	// Where + nested source
+	{
+		"where_nested_source",
+		"data.selections where (odd ge 1.4).length ge 2",
+		rule.D{
+			"data": rule.D{
+				"selections": []any{
+					rule.D{"odd": 1.5},
+					rule.D{"odd": 2.0},
+					rule.D{"odd": 1.0},
+				},
+			},
+		},
+		true,
+	},
+	// Where with compound predicate
+	{
+		"where_compound_and",
+		`selections where (odd ge 1.4 and is_live eq true).length ge 2`,
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5, "is_live": true},
+				rule.D{"odd": 2.0, "is_live": false},
+				rule.D{"odd": 1.8, "is_live": true},
+			},
+		},
+		true,
+	},
+	{
+		"where_compound_or",
+		`selections where (status eq "live" or status eq "active").length ge 1`,
+		rule.D{
+			"selections": []any{
+				rule.D{"status": "cancelled"},
+				rule.D{"status": "live"},
+			},
+		},
+		true,
+	},
+	{
+		"where_with_not_predicate",
+		`selections where (not (status eq "cancelled")).length ge 1`,
+		rule.D{
+			"selections": []any{
+				rule.D{"status": "cancelled"},
+				rule.D{"status": "active"},
+			},
+		},
+		true,
+	},
+	// Where + quantifier
+	{
+		"where_with_any_match",
+		`selections where (odd ge 1.4) any (provider eq "X")`,
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5, "provider": "Y"},
+				rule.D{"odd": 2.0, "provider": "X"},
+				rule.D{"odd": 1.0, "provider": "X"},
+			},
+		},
+		true,
+	},
+	{
+		"where_with_any_no_match",
+		`selections where (odd ge 1.4) any (provider eq "Z")`,
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5, "provider": "X"},
+				rule.D{"odd": 2.0, "provider": "Y"},
+			},
+		},
+		false,
+	},
+	{
+		"where_with_all_match",
+		`selections where (odd ge 1.4) all (is_live eq true)`,
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5, "is_live": true},
+				rule.D{"odd": 2.0, "is_live": true},
+				rule.D{"odd": 1.0, "is_live": false},
+			},
+		},
+		true,
+	},
+	{
+		"where_with_all_no_match",
+		`selections where (odd ge 1.4) all (is_live eq true)`,
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5, "is_live": true},
+				rule.D{"odd": 2.0, "is_live": false},
+			},
+		},
+		false,
+	},
+	{
+		"where_with_none_match",
+		`selections where (odd ge 1.4) none (is_fraud eq true)`,
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5, "is_fraud": false},
+				rule.D{"odd": 2.0, "is_fraud": false},
+				rule.D{"odd": 1.0, "is_fraud": true},
+			},
+		},
+		true,
+	},
+	// Where inside quantifier
+	{
+		"where_inside_quantifier",
+		`groups any (items where (active eq true).length gt 2)`,
+		rule.D{
+			"groups": []any{
+				rule.D{
+					"items": []any{
+						rule.D{"active": true},
+						rule.D{"active": false},
+					},
+				},
+				rule.D{
+					"items": []any{
+						rule.D{"active": true},
+						rule.D{"active": true},
+						rule.D{"active": true},
+					},
+				},
+			},
+		},
+		true,
+	},
+	// Combination with outer conditions
+	{
+		"where_combined_with_and",
+		"selections where (odd ge 1.4).length ge 2 and is_freebet eq false",
+		rule.D{
+			"is_freebet": false,
+			"selections": []any{
+				rule.D{"odd": 1.5},
+				rule.D{"odd": 2.0},
+			},
+		},
+		true,
+	},
+	{
+		"where_combined_with_not",
+		"not (selections where (odd ge 5.0).length gt 0)",
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5},
+				rule.D{"odd": 2.0},
+			},
+		},
+		true,
+	},
+	// Edge cases
+	{
+		"where_missing_array",
+		"missing where (odd ge 1.4).length eq 0",
+		rule.D{},
+		true,
+	},
+	{
+		"where_non_array",
+		"name where (odd ge 1.4).length eq 0",
+		rule.D{"name": "not_an_array"},
+		true,
+	},
+	{
+		"where_empty_array",
+		"selections where (odd ge 1.4).length eq 0",
+		rule.D{"selections": []any{}},
+		true,
+	},
+	{
+		"where_element_missing_field",
+		"selections where (odd ge 1.4).length eq 1",
+		rule.D{
+			"selections": []any{
+				rule.D{"odd": 1.5},
+				rule.D{"name": "no_odd"},
+			},
+		},
+		true,
+	},
+}

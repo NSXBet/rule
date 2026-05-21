@@ -9,6 +9,7 @@ const (
 	NodeLiteral
 	NodeArray
 	NodeProperty
+	NodeWhereCount
 )
 
 type ASTNode struct {
@@ -132,6 +133,14 @@ func NewArrayLiteralNode(elements []Value) *ASTNode {
 			Type:     ValueArray,
 			ArrValue: elements,
 		},
+	}
+}
+
+func NewWhereCountNode(source, predicate *ASTNode) *ASTNode {
+	return &ASTNode{
+		Type:     NodeWhereCount,
+		Left:     source,
+		Children: []*ASTNode{predicate},
 	}
 }
 
