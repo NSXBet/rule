@@ -128,7 +128,7 @@ All functionality is validated through the comprehensive test suite in `test/fix
 - **Quantifier `none`**: True if no element matches (true for empty arrays, short-circuits on first match)
 - **Sub-expressions**: Quantifiers support full expressions including `and`, `or`, `not`, all comparison operators
 - **Nested access**: Works with nested properties (e.g., `data.items any (status eq "active")`)
-- **Filter `where`**: `<source> where (<predicate>).length` counts elements matching predicate; `<source> where (<predicate>) any|all|none (<sub>)` applies a quantifier on the filtered subset. Encadeamento de `where` não é suportado. Acesso pós-`where` é restrito a `.length`.
+- **Filter `where`**: `<source> where (<predicate>).length` counts elements matching predicate; `<source> where (<predicate>) any|all|none (<sub>)` applies a quantifier on the filtered subset. Chaining of `where` is not supported. Post-`where` access is restricted to `.length`, `any`, `all`, and `none`.
 - **Reserved words**: `any`, `all`, `none`, `where` are reserved keywords (cannot be used as field names)
 
 ### Zero-Allocation Implementation

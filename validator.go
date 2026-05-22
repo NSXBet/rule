@@ -37,10 +37,25 @@ func ValidateAST(node *ASTNode) error {
 		// These are terminal nodes, no further validation needed
 		return nil
 	case NodeWhereCount:
-		return validateWhereCountOperation(node)
+		return validateWhereCountNode(node)
 	}
 
 	return nil
+}
+
+// validateWhereCountNode validates a NodeWhereCount and recursively validates
+// its source and predicate subtrees.
+func validateWhereCountNode(node *ASTNode) error {
+	if err := validateWhereCountOperation(node); err != nil {
+		return err
+	}
+
+	if err := ValidateAST(node.Left); err != nil {
+		return err
+	}
+
+	// validateWhereCountOperation guarantees the predicate child exists.
+	return ValidateAST(node.Children[0])
 }
 
 func validateBinaryOperation(node *ASTNode) error {

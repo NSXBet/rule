@@ -413,6 +413,29 @@ func TestParserWhereWithAll(t *testing.T) {
 	}
 }
 
+// Test parser with where + none (rewriting).
+func TestParserWhereWithNone(t *testing.T) {
+	ast, err := ParseRule(`selections where (odd ge 1.4) none (is_fraud eq true)`)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Top must be NONE quantifier
+	if ast.Type != NodeBinaryOp || ast.Operator != NONE {
+		t.Fatalf("Expected top-level NONE, got %v / %v", ast.Type, ast.Operator)
+	}
+
+	// Left must be the original source identifier
+	if ast.Left.Type != NodeIdentifier || ast.Left.Value.StrValue != "selections" {
+		t.Errorf("Expected source to be identifier 'selections', got %v", ast.Left.Type)
+	}
+
+	// Right must be a composed AND of (predicate, subExpr) — same shape as ANY rewrite.
+	if ast.Right.Type != NodeBinaryOp || ast.Right.Operator != AND {
+		t.Error("Expected right to be a composed AND expression for NONE rewrite")
+	}
+}
+
 // Test parser where errors.
 func TestParserWhereErrors(t *testing.T) {
 	tests := []struct {
