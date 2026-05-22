@@ -36,9 +36,26 @@ func ValidateAST(node *ASTNode) error {
 	case NodeLiteral, NodeIdentifier, NodeProperty, NodeArray:
 		// These are terminal nodes, no further validation needed
 		return nil
+	case NodeWhereCount:
+		return validateWhereCountNode(node)
 	}
 
 	return nil
+}
+
+// validateWhereCountNode validates a NodeWhereCount and recursively validates
+// its source and predicate subtrees.
+func validateWhereCountNode(node *ASTNode) error {
+	if err := validateWhereCountOperation(node); err != nil {
+		return err
+	}
+
+	if err := ValidateAST(node.Left); err != nil {
+		return err
+	}
+
+	// validateWhereCountOperation guarantees the predicate child exists.
+	return ValidateAST(node.Children[0])
 }
 
 func validateBinaryOperation(node *ASTNode) error {
@@ -55,7 +72,7 @@ func validateBinaryOperation(node *ASTNode) error {
 		return validateQuantifierOperation(node)
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE, PR,
-		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS:
+		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS, WHERE:
 		// Other operators don't need special validation
 		return nil
 	}
@@ -74,7 +91,7 @@ func validateUnaryOperation(node *ASTNode) error {
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE,
 		CO, SW, EW, IN, NOT_IN, DQ, DN, BE, BQ, AF, AQ, DL, DG,
-		AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS:
+		AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS, WHERE:
 		// Other operators don't apply to unary operations
 		return nil
 	}
@@ -94,7 +111,7 @@ func validateInOperation(node *ASTNode) error {
 		case NodeIdentifier, NodeProperty:
 			// Allow identifiers/properties as they might evaluate to arrays at runtime
 			return nil
-		case NodeBinaryOp, NodeUnaryOp, NodeArray:
+		case NodeBinaryOp, NodeUnaryOp, NodeArray, NodeWhereCount:
 			return ErrInvalidInOperand
 		}
 	}
@@ -141,6 +158,26 @@ func validatePresenceOperation(node *ASTNode) error {
 	if operand.Type != NodeIdentifier && operand.Type != NodeProperty {
 		return ErrInvalidPresenceOp
 	}
+
+	return nil
+}
+
+func validateWhereCountOperation(node *ASTNode) error {
+	if node.Left == nil {
+		return ErrWhereRequiresParens
+	}
+
+	// Source must be identifier or property
+	if node.Left.Type != NodeIdentifier && node.Left.Type != NodeProperty {
+		return ErrWhereRequiresParens
+	}
+
+	// Predicate (first child) must exist
+	if len(node.Children) == 0 || node.Children[0] == nil {
+		return ErrEmptyWherePredicate
+	}
+
+	// Predicate validation happens recursively by the caller
 
 	return nil
 }

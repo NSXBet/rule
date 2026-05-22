@@ -10,6 +10,19 @@ There are some constraints:
 3. Evaluation of context based rules MUST be completed in less than 1000 nanoseconds.
 4. The rules that must work are present in the test/fixtures.go file in the form of test tables.
 
+## Supported operators
+
+- Comparison: `eq`, `ne`, `==`, `!=`, `lt`, `gt`, `le`, `ge`
+- Strings: `co` (contains), `sw` (starts with), `ew` (ends with)
+- Membership: `in`, `not in`
+- Presence: `pr`
+- DateTime: `dq`, `dn`, `be`, `bq`, `af`, `aq`, `dl`, `dg`
+- Logical: `and`, `or`, `not`
+- List: `.length`, `any`, `all`, `none`
+- List filtering (proprietary extension): `where (predicate)` followed by `.length` or a quantifier (`any`, `all`, `none`).
+  Examples: `selections where (odd ge 1.4).length ge 4`, `selections where (odd ge 1.4) any (provider eq "X")`.
+  Not part of `nikunjy/rules`.
+
 ## Coding guidelines
 
 You are a seasoned golang developer. You know what you are doing. You are also a champion of TDD. You will always follow

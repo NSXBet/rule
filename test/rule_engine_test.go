@@ -66,6 +66,9 @@ func TestRulesRound1(t *testing.T) {
 		QuantifierNoneTests,
 		ListRealWorldTests,
 		NestedListTests,
+
+		// Where filter operator tests
+		WhereTests,
 	}
 
 	for _, group := range all {

@@ -141,8 +141,119 @@ func (p *Parser) parseNotExpression() (*ASTNode, error) {
 	return p.parseComparisonExpression()
 }
 
-func (p *Parser) parseComparisonExpression() (*ASTNode, error) {
+func (p *Parser) parseWhereExpression() (*ASTNode, error) {
 	left, err := p.parsePrimaryExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	// where can only follow an identifier/property (array source)
+	if p.curToken.Type != WHERE {
+		return left, nil
+	}
+
+	if left.Type != NodeIdentifier && left.Type != NodeProperty {
+		return nil, ErrWhereRequiresParens
+	}
+
+	p.advance()
+
+	if p.curToken.Type != PAREN_OPEN {
+		return nil, ErrWhereRequiresParens
+	}
+
+	p.advance()
+
+	if p.curToken.Type == PAREN_CLOSE {
+		return nil, ErrEmptyWherePredicate
+	}
+
+	predicate, err := p.parseExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	if expectErr := p.expect(PAREN_CLOSE); expectErr != nil {
+		return nil, expectErr
+	}
+
+	result := NewWhereCountNode(left, predicate)
+
+	switch p.curToken.Type { //nolint:exhaustive // only DOT and quantifiers are valid here
+	case DOT:
+		return p.parseWhereWithLength(result)
+
+	case ANY, ALL, NONE:
+		return p.parseWhereWithQuantifier(result, p.curToken.Type)
+
+	default:
+		return nil, ErrWhereRequiresLengthOrQuantifier
+	}
+}
+
+func (p *Parser) parseWhereWithLength(whereNode *ASTNode) (*ASTNode, error) {
+	// Consume the DOT
+	if err := p.expect(DOT); err != nil {
+		return nil, err
+	}
+
+	// Must be an identifier with value "length"
+	if p.curToken.Type != IDENTIFIER || p.curToken.Value != lengthProperty {
+		return nil, ErrWhereRequiresLength
+	}
+
+	p.advance()
+
+	return whereNode, nil
+}
+
+func (p *Parser) parseWhereWithQuantifier(whereNode *ASTNode, quantifier TokenType) (*ASTNode, error) {
+	// Consume the quantifier token (any/all/none)
+	p.advance()
+
+	if p.curToken.Type != PAREN_OPEN {
+		return nil, ErrQuantifierRequiresParens
+	}
+
+	p.advance()
+
+	if p.curToken.Type == PAREN_CLOSE {
+		return nil, ErrEmptyParentheses
+	}
+
+	subExpr, err := p.parseExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	if expectErr := p.expect(PAREN_CLOSE); expectErr != nil {
+		return nil, expectErr
+	}
+
+	// Rewrite "<source> where (<predicate>) <quantifier> (<subExpr>)" as
+	// "<source> <quantifier> (<composedExpr>)" without materializing the filtered array.
+	// - any:  source any  (predicate and subExpr)
+	// - all:  source all  ((not predicate) or subExpr)   // vacuous truth for filtered out
+	// - none: source none (predicate and subExpr)
+	source := whereNode.Left
+	predicate := whereNode.Children[0]
+
+	var composed *ASTNode
+
+	switch quantifier { //nolint:exhaustive // only quantifier tokens are valid here
+	case ANY, NONE:
+		composed = NewBinaryOpNode(AND, predicate, subExpr)
+	case ALL:
+		composed = NewBinaryOpNode(OR, NewUnaryOpNode(NOT, predicate), subExpr)
+	default:
+		return nil, ErrInvalidOperator
+	}
+
+	return NewBinaryOpNode(quantifier, source, composed), nil
+}
+
+func (p *Parser) parseComparisonExpression() (*ASTNode, error) {
+	left, err := p.parseWhereExpression()
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +369,8 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 		ALL,
 		NONE,
 		EQUALS,
-		NOT_EQUALS:
+		NOT_EQUALS,
+		WHERE:
 		return nil, fmt.Errorf("unexpected token %s at position %d", p.curToken.Type, p.current)
 
 	default:
@@ -347,7 +459,8 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 				ALL,
 				NONE,
 				EQUALS,
-				NOT_EQUALS:
+				NOT_EQUALS,
+				WHERE:
 				return nil, fmt.Errorf("unexpected token in array: %s", p.curToken.Type)
 			default:
 				return nil, fmt.Errorf("unexpected token in array: %s", p.curToken.Type)
@@ -445,7 +558,8 @@ func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 		NOT,
 		ANY,
 		ALL,
-		NONE:
+		NONE,
+		WHERE:
 		return false
 	default:
 		return false
@@ -458,7 +572,7 @@ func (p *Parser) isValue(tokenType TokenType) bool {
 		return true
 	case EOF, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
 		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, PR,
-		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS:
+		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS, WHERE:
 		return false
 	default:
 		return false

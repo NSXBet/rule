@@ -556,6 +556,58 @@ rule := `(user.age ge 18 and user.status eq "active") and
 result, _ := engine.Evaluate(rule, context) // true
 ```
 
+### List Operators
+
+Operate over arrays with `.length`, quantifiers (`any`, `all`, `none`) and the
+proprietary `where` filter:
+
+```go
+context := rule.D{
+    "selections": []any{
+        rule.D{"odd": 1.5, "is_live": true,  "provider": "X"},
+        rule.D{"odd": 2.0, "is_live": false, "provider": "Y"},
+        rule.D{"odd": 1.4, "is_live": true,  "provider": "X"},
+        rule.D{"odd": 1.0, "is_live": true,  "provider": "Z"},
+    },
+}
+
+// Array length
+engine.Evaluate(`selections.length ge 3`, context) // true
+
+// Quantifiers over the full array
+engine.Evaluate(`selections any (provider eq "X")`, context)   // true
+engine.Evaluate(`selections all (is_live eq true)`, context)   // false
+engine.Evaluate(`selections none (provider eq "W")`, context)  // true
+
+// where: count or quantify over a filtered subset
+// "How many selections have odd >= 1.4?"
+engine.Evaluate(`selections where (odd ge 1.4).length ge 3`, context)             // true
+// "Among selections with odd >= 1.4, is any from provider X?"
+engine.Evaluate(`selections where (odd ge 1.4) any (provider eq "X")`, context)   // true
+// "Among selections with odd >= 1.4, are all live?"
+engine.Evaluate(`selections where (odd ge 1.4) all (is_live eq true)`, context)   // false (one has is_live=false)
+```
+
+#### `where` rules
+
+- `<source> where (<predicate>).length <op> <number>` — counts elements where
+  predicate is true. Zero-allocation: the engine never materializes the
+  filtered array.
+- `<source> where (<predicate>) any|all|none (<sub>)` — equivalent to applying
+  the quantifier on the filtered subset. Internally rewritten as a single
+  quantifier over the source array with a composed predicate.
+- The source must be an identifier or property that resolves to an array of
+  objects.
+- The predicate is a full boolean expression evaluated with each array element
+  as context.
+- Only `.length`, `any`, `all`, and `none` may follow the `where` clause.
+- Chained `where` (`where (...) where (...)`) is **not** supported in this
+  release.
+- `where` is a **reserved keyword** — JSON contexts using a top-level field
+  named `where` will conflict.
+- `where` is a **proprietary extension** that is not part of `nikunjy/rules`.
+  Rules using `where` will not run on that library.
+
 ---
 
 ## 💾 Query Caching
@@ -814,6 +866,9 @@ This section provides a comprehensive compatibility analysis between NSXBet/rule
 | **DateTime Operators** | Native datetime comparison | `created_at af "2024-01-01T00:00:00Z"` | Time-based business rules |
 | **Property-to-Property** | Compare any two properties | `user.age gt limits.minimum` | Dynamic threshold validation |
 | **Deep Property Comparison** | Multi-level nested comparisons | `config.max eq system.limits.ceiling` | Complex configuration rules |
+| **List Quantifiers** | `any`, `all`, `none` over arrays | `selections any (status eq "live")` | Element-level checks on arrays |
+| **Array Length** | `.length` accessor on arrays | `items.length ge 3` | Size constraints |
+| **`where` Filter** | Filter arrays by predicate before count or quantifier | `selections where (odd ge 1.4).length ge 4` | Counting / quantifying over filtered subsets. **Reserves the keyword `where`.** |
 | **rule.D Type Alias** | Cleaner syntax | `rule.D{"key": "value"}` | Developer experience |
 
 ### 🔧 Migration Assessment
