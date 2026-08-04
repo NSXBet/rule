@@ -701,3 +701,45 @@ func Example_ecommerce() {
 	// Free shipping eligible: true
 	// Weekend discount eligible: true
 }
+
+// Example_lenientMode demonstrates the opt-in lenient (SQL-ish null-aware)
+// evaluation mode. Missing attributes are treated as null and propagate
+// through comparisons with SQL-ish semantics instead of always returning false.
+func Example_lenientMode() {
+	// Default engine: strict mode (missing attribute -> any comparison is false).
+	strict := rule.NewEngine()
+
+	// Opt-in lenient mode via functional options.
+	lenient := rule.NewEngineWithOptions(rule.WithLenientMode())
+
+	// Context with no "age" key.
+	ctx := rule.D{}
+
+	// In strict mode, "age eq 18" is false because age is missing.
+	rStrict, _ := strict.Evaluate("age eq 18", ctx)
+
+	// In lenient mode, null eq 18 is still false...
+	rLenientEq, _ := lenient.Evaluate("age eq 18", ctx)
+
+	// ...but null ne 18 is true (null is not 18), unlike strict mode where
+	// missing attributes make every comparison false.
+	rLenientNe, _ := lenient.Evaluate("age ne 18", ctx)
+
+	// null eq null is true in lenient mode.
+	rLenientBothMissing, _ := lenient.Evaluate("a eq b", ctx)
+
+	// null not in [...] is true in lenient mode.
+	rLenientNotIn, _ := lenient.Evaluate("role not in [\"admin\",\"user\"]", ctx)
+
+	fmt.Printf("strict age eq 18: %t\n", rStrict)
+	fmt.Printf("lenient age eq 18: %t\n", rLenientEq)
+	fmt.Printf("lenient age ne 18: %t\n", rLenientNe)
+	fmt.Printf("lenient a eq b (both missing): %t\n", rLenientBothMissing)
+	fmt.Printf("lenient role not in [...]: %t", rLenientNotIn)
+	// Output:
+	// strict age eq 18: false
+	// lenient age eq 18: false
+	// lenient age ne 18: true
+	// lenient a eq b (both missing): true
+	// lenient role not in [...]: true
+}
