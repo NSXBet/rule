@@ -153,4 +153,8 @@ var LenientPresenceTests = []Case{
 	{"lenient_pr_nil_explicit", "x pr", rule.D{"x": nil}, true},
 	{"lenient_pr_nested_missing", "a.b.c pr", rule.D{}, false},
 	{"lenient_pr_nested_present", "a.b pr", rule.D{"a": rule.D{"b": 1}}, true},
+	// explicit nil (present) vs absent: only the absent operand routes through
+	// lenientCompare, so eq -> false and ne -> true.
+	{"lenient_nil_vs_absent_eq", "x eq y", rule.D{"x": nil}, false},
+	{"lenient_nil_vs_absent_ne", "x ne y", rule.D{"x": nil}, true},
 }

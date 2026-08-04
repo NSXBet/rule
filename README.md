@@ -906,7 +906,7 @@ This section provides a comprehensive compatibility analysis between NSXBet/rule
 |--------|-------|-------|
 | **Core Functionality Compatibility** | **77.3%** (17/22 scenarios) | Identical behavior for standard use cases |
 | **Migration Code Compatibility** | **90%+** | Percentage of existing code that works without changes |
-| **Enhanced Features** | **6 major extensions** | New capabilities not available in nikunjy/rules |
+| **Enhanced Features** | **7 major extensions** | New capabilities not available in nikunjy/rules |
 | **Breaking Changes** | **1 significant** | Unquoted strings not supported |
 
 **Bottom Line**: NSXBet/rule is highly compatible for standard use cases, provides significant performance improvements, and adds powerful new features while maintaining the same API structure.
