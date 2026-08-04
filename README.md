@@ -13,10 +13,11 @@ A **blazingly fast**, **zero-allocation** rule engine for Go that evaluates logi
 2. [📚 API](#-api)
 3. [🎯 Context](#-context)
 4. [🔤 Rule Language](#-rule-language)
-5. [💾 Query Caching](#-query-caching)
-6. [⚡ Benchmarks](#-benchmarks)
-7. [🤝 Contributing](#-contributing)
-8. [📄 License](#-license)
+5. [🟢 Lenient Mode (Null-Aware Semantics)](#-lenient-mode-null-aware-semantics)
+6. [💾 Query Caching](#-query-caching)
+7. [⚡ Benchmarks](#-benchmarks)
+8. [🤝 Contributing](#-contributing)
+9. [📄 License](#-license)
 
 ---
 
@@ -80,6 +81,19 @@ Creates a new rule engine instance. Each engine maintains its own query cache fo
 ```go
 engine := rule.NewEngine()
 ```
+
+#### `NewEngineWithOptions(opts ...Option) *Engine`
+Creates a new rule engine configured with functional options. `NewEngine()` is equivalent to `NewEngineWithOptions()` with no options (strict mode).
+
+```go
+// Strict (default, same as NewEngine()):
+engine := rule.NewEngineWithOptions()
+
+// Lenient (SQL-ish null-aware) mode:
+engine := rule.NewEngineWithOptions(rule.WithLenientMode())
+```
+
+See [Lenient Mode (Null-Aware Semantics)](#-lenient-mode-null-aware-semantics) for details.
 
 #### `Evaluate(query string, context rule.D) (bool, error)`
 Evaluates a rule expression against the provided context. Returns `true`/`false` and any parsing/evaluation errors.
@@ -610,6 +624,66 @@ engine.Evaluate(`selections where (odd ge 1.4) all (is_live eq true)`, context) 
 
 ---
 
+## 🟢 Lenient Mode (Null-Aware Semantics)
+
+By default the engine runs in **strict mode**: when an attribute is missing
+from the context, *every* comparison involving it returns `false`. This is
+fast and predictable but can be surprising for cases like `x ne 10`, which
+returns `false` when `x` is absent rather than `true`.
+
+**Lenient mode** is an opt-in alternative where missing attributes are
+treated as `null` and propagate through comparison operators with SQL-ish
+(2-valued) semantics:
+
+| Operator               | null vs concrete value | null vs null |
+|------------------------|------------------------|--------------|
+| `eq` / `==`            | `false`                | `true`       |
+| `ne` / `!=`            | `true`                 | `false`      |
+| `lt`, `gt`, `le`, `ge` | `false`                | `false`      |
+| `co`, `sw`, `ew`       | `false`                | `false`      |
+| `in`                   | `false`                | `false`      |
+| `not in`               | `true`                 | `false`      |
+| datetime (`dq`…`dg`)   | `false`                | `false`      |
+| `pr`                   | `false` if missing / `true` if present (incl. `nil`) | unchanged |
+
+`and`, `or`, `not` and the list quantifiers (`any`/`all`/`none`) are
+**unaffected** by lenient mode — they keep their normal truthiness behavior.
+
+### Enabling lenient mode
+
+```go
+engine := rule.NewEngineWithOptions(rule.WithLenientMode())
+```
+
+`NewEngine()` and `NewEngineWithOptions()` with no options keep the original
+strict behavior, so existing code is unchanged.
+
+### Example
+
+```go
+strict  := rule.NewEngine()                              // default
+lenient := rule.NewEngineWithOptions(rule.WithLenientMode())
+
+ctx := rule.D{} // "age" is absent
+
+strict.Evaluate(`age ne 18`, ctx)  // -> false
+lenient.Evaluate(`age ne 18`, ctx) // -> true  (null ne 18)
+lenient.Evaluate(`age eq 18`, ctx) // -> false (null eq 18)
+lenient.Evaluate(`a eq b`, ctx)    // -> true  (null eq null)
+lenient.Evaluate(`role not in ["admin","user"]`, ctx) // -> true
+```
+
+### Notes
+
+- Only **missing attributes** are treated as `null`. An explicit `nil` value
+  in the context is still considered present for `pr` and keeps its existing
+  value-comparison behavior.
+- Lenient mode has **no allocation cost** (a single bool flag on the
+  evaluator) and does not affect strict-mode performance.
+- Lenient mode is a proprietary extension, not part of `nikunjy/rules`.
+
+---
+
 ## 💾 Query Caching
 
 The rule engine is smart about performance! 🧠 Here's how caching works:
@@ -869,6 +943,7 @@ This section provides a comprehensive compatibility analysis between NSXBet/rule
 | **List Quantifiers** | `any`, `all`, `none` over arrays | `selections any (status eq "live")` | Element-level checks on arrays |
 | **Array Length** | `.length` accessor on arrays | `items.length ge 3` | Size constraints |
 | **`where` Filter** | Filter arrays by predicate before count or quantifier | `selections where (odd ge 1.4).length ge 4` | Counting / quantifying over filtered subsets. **Reserves the keyword `where`.** |
+| **Lenient Mode** | Opt-in SQL-ish null-aware semantics for missing attributes | `NewEngineWithOptions(rule.WithLenientMode())` | Rules where absence should mean `null` instead of `false` |
 | **rule.D Type Alias** | Cleaner syntax | `rule.D{"key": "value"}` | Developer experience |
 
 ### 🔧 Migration Assessment
