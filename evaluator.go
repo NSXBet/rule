@@ -605,12 +605,12 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 
 	// If either operand is invalid (missing attribute), comparison is false
 	if !leftResult.IsValid || !rightResult.IsValid {
-		if !e.lenient {
+		if e.lenient {
+			result.Bool = e.lenientCompare(node.Operator, &leftResult, &rightResult)
+		} else {
 			result.Bool = false
-			return nil
 		}
 
-		result.Bool = e.lenientCompare(node.Operator, &leftResult, &rightResult)
 		return nil
 	}
 
@@ -629,7 +629,7 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 // Presence (pr) is handled separately and is unaffected. Logical and
 // quantifier operators also route through toBool and are unaffected.
 func (e *Evaluator) lenientCompare(operator TokenType, left, right *EvalResult) bool {
-	switch operator {
+	switch operator { //nolint:exhaustive // only comparison operators reach here
 	case EQ, EQUALS:
 		// null eq null -> true; null eq value -> false
 		return !left.IsValid && !right.IsValid

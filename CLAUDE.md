@@ -38,6 +38,7 @@ The entire specification is defined through comprehensive test cases in `test/fi
 - **Array Length**: `.length` accessor for array size checks
 - **List Quantifiers**: `any`, `all`, `none` operators for element-level conditions
 - **List Filtering**: `where (predicate)` operator to filter arrays before applying `.length` or a quantifier (proprietary extension; not part of `nikunjy/rules`)
+- **Lenient Mode**: opt-in SQL-ish null-aware semantics for missing attributes via `NewEngineWithOptions(WithLenientMode())` (proprietary extension; not part of `nikunjy/rules`)
 
 ### Rule Syntax Examples
 
@@ -120,6 +121,13 @@ All functionality is validated through the comprehensive test suite in `test/fix
 - **String Comparisons**: Lexicographic ordering for string relational operations
 - **Membership Operations**: Use strict type checking (no cross-type matching)
 - **Large Integer Support**: Preserve precision for integers > 2^53 using dual storage
+- **Missing Attributes**: In strict (default) mode, any comparison involving a
+  missing attribute returns `false`. In lenient mode
+  (`NewEngineWithOptions(WithLenientMode())`), missing attributes are treated
+  as `null` with SQL-ish 2-valued semantics: `null ne <value>` is `true`,
+  `null not in [...]` is `true`, `null eq null` is `true`, ordering/string/
+  datetime ops against `null` are `false`. Presence (`pr`), logical and
+  quantifier operators are unaffected. Opt-in only; `NewEngine()` is strict.
 
 ### List Operations
 - **Array Length**: Access `.length` on array properties (e.g., `items.length gt 3`)

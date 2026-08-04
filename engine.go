@@ -51,6 +51,7 @@ func WithLenientMode() Option {
 // options (strict mode).
 func NewEngineWithOptions(opts ...Option) *Engine {
 	e := NewEngine()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(e)
