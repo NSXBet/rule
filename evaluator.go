@@ -23,7 +23,12 @@ type EvalResult struct {
 }
 
 // Evaluator is an optimized evaluator that avoids allocations during evaluation.
-type Evaluator struct{}
+//
+// When lenient is true, the evaluator applies SQL-ish null-aware semantics
+// for comparisons involving missing attributes (see WithLenientMode).
+type Evaluator struct {
+	lenient bool
+}
 
 func NewEvaluator() *Evaluator {
 	return &Evaluator{}

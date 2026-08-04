@@ -25,6 +25,41 @@ func NewEngine() *Engine {
 	}
 }
 
+// Option configures an Engine created with NewEngineWithOptions.
+type Option func(*Engine)
+
+// WithLenientMode enables lenient (SQL-ish null-aware) evaluation semantics.
+//
+// In lenient mode, missing attributes are treated as null and propagate
+// through comparison operators with SQL-ish semantics instead of being
+// coerced to false unconditionally:
+//
+//	null eq  <value> -> false	null ne  <value> -> true
+//	null lt/gt/le/ge <value> -> false	null not in [...]   -> true
+//	null co/sw/ew <value> -> false	null eq null        -> true
+//
+// Presence (pr), logical (and/or/not) and quantifier operators are
+// unaffected. The default (strict) mode is unchanged. Opt-in only.
+func WithLenientMode() Option {
+	return func(e *Engine) {
+		e.evaluator.lenient = true
+	}
+}
+
+// NewEngineWithOptions creates a new rule engine configured with the given
+// options. NewEngine() is equivalent to NewEngineWithOptions() with no
+// options (strict mode).
+func NewEngineWithOptions(opts ...Option) *Engine {
+	e := NewEngine()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(e)
+		}
+	}
+
+	return e
+}
+
 func (e *Engine) AddQuery(rule string) error {
 	if _, exists := e.compiledRules.Load(rule); exists {
 		return nil // Already compiled
