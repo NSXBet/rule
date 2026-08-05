@@ -702,9 +702,9 @@ func Example_ecommerce() {
 	// Weekend discount eligible: true
 }
 
-// Example_lenientMode demonstrates the opt-in lenient (SQL-ish null-aware)
-// evaluation mode. Missing attributes are treated as null and propagate
-// through comparisons with SQL-ish semantics instead of always returning false.
+// Example_lenientMode demonstrates the opt-in lenient (neutral) evaluation
+// mode. A comparison predicate involving a missing attribute returns true
+// (neutral), imposing no constraint — the identity element for AND-chains.
 func Example_lenientMode() {
 	// Default engine: strict mode (missing attribute -> any comparison is false).
 	strict := rule.NewEngine()
@@ -718,28 +718,32 @@ func Example_lenientMode() {
 	// In strict mode, "age eq 18" is false because age is missing.
 	rStrict, _ := strict.Evaluate("age eq 18", ctx)
 
-	// In lenient mode, null eq 18 is still false...
+	// In lenient mode, a missing attribute makes the comparison neutral (true).
 	rLenientEq, _ := lenient.Evaluate("age eq 18", ctx)
 
-	// ...but null ne 18 is true (null is not 18), unlike strict mode where
-	// missing attributes make every comparison false.
+	// Neutrality holds for every comparison operator, so "age ne 18" is also true.
 	rLenientNe, _ := lenient.Evaluate("age ne 18", ctx)
 
-	// null eq null is true in lenient mode.
+	// And for both-sides-missing: "a eq b" is neutral -> true.
 	rLenientBothMissing, _ := lenient.Evaluate("a eq b", ctx)
 
-	// null not in [...] is true in lenient mode.
-	rLenientNotIn, _ := lenient.Evaluate("role not in [\"admin\",\"user\"]", ctx)
+	// And for membership: "role not in [...]" is neutral -> true.
+	rLenientNotIn, _ := lenient.Evaluate(`role not in ["admin","user"]`, ctx)
+
+	// AND-chains keep real constraints: a present field that is false still wins.
+	rAndChain, _ := lenient.Evaluate(`age eq 18 and status eq "settled"`, rule.D{"status": "pending"})
 
 	fmt.Printf("strict age eq 18: %t\n", rStrict)
 	fmt.Printf("lenient age eq 18: %t\n", rLenientEq)
 	fmt.Printf("lenient age ne 18: %t\n", rLenientNe)
 	fmt.Printf("lenient a eq b (both missing): %t\n", rLenientBothMissing)
-	fmt.Printf("lenient role not in [...]: %t", rLenientNotIn)
+	fmt.Printf("lenient role not in [...]: %t\n", rLenientNotIn)
+	fmt.Printf("lenient age eq 18 and status eq settled (status=pending): %t", rAndChain)
 	// Output:
 	// strict age eq 18: false
-	// lenient age eq 18: false
+	// lenient age eq 18: true
 	// lenient age ne 18: true
 	// lenient a eq b (both missing): true
 	// lenient role not in [...]: true
+	// lenient age eq 18 and status eq settled (status=pending): false
 }

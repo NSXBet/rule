@@ -606,7 +606,14 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 	// If either operand is invalid (missing attribute), comparison is false
 	if !leftResult.IsValid || !rightResult.IsValid {
 		if e.lenient {
-			result.Bool = e.lenientCompare(node.Operator, &leftResult, &rightResult)
+			// Neutral semantics: a comparison predicate over a missing attribute
+			// returns true, imposing no constraint. This is the identity element
+			// for AND-chains (the dominant pattern in betting lifecycle rules).
+			// Neutrality only holds inside an AND-chain: under `not`, `or`, or
+			// list quantifiers it becomes decisive (e.g. `not (x eq 10)` -> false,
+			// `or` short-circuits to true, `none` sees true per element). For
+			// those rules prefer strict mode.
+			result.Bool = true
 		} else {
 			result.Bool = false
 		}
@@ -615,36 +622,6 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 	}
 
 	return e.performComparison(node.Operator, &leftResult, &rightResult, result)
-}
-
-// lenientCompare applies SQL-ish null-aware semantics when at least one
-// operand is missing (IsValid == false). It implements a 2-valued logic
-// (no tri-state "unknown") so callers get a definitive bool.
-//
-//	null eq  <value> -> false   null ne  <value> -> true
-//	null lt/gt/le/ge <value> -> false   null not in [...]   -> true
-//	null co/sw/ew <value> -> false   null eq null        -> true
-//	all datetime operators against null -> false
-//
-// Presence (pr) is handled separately and is unaffected. Logical and
-// quantifier operators also route through toBool and are unaffected.
-func (e *Evaluator) lenientCompare(operator TokenType, left, right *EvalResult) bool {
-	switch operator { //nolint:exhaustive // only comparison operators reach here
-	case EQ, EQUALS:
-		// null eq null -> true; null eq value -> false
-		return !left.IsValid && !right.IsValid
-	case NE, NOT_EQUALS:
-		// null ne null -> false; null ne value -> true
-		return left.IsValid || right.IsValid
-	case NOT_IN:
-		// null is never a member of a concrete set -> not in -> true
-		return left.IsValid || right.IsValid
-	case LT, GT, LE, GE, CO, SW, EW, IN, DQ, DN, BE, BQ, AF, AQ, DL, DG:
-		// Ordering, string, membership and datetime ops are not null-comparable
-		return false
-	default:
-		return false
-	}
 }
 
 // performComparison executes the specific comparison operation.
