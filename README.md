@@ -694,7 +694,7 @@ lenient.Evaluate(`age eq 18 and status eq "settled"`, rule.D{"status": "pending"
 - Only **missing attributes** (key absent from the context map) trigger the
   neutral path. An explicit `nil` value is still considered present
   (`IsValid=true`) and is dispatched to the normal comparison path; it does
-  not go through `lenientCompare`.
+  not go through the lenient branch.
 - Lenient mode has **no allocation cost** (a single bool flag on the
   evaluator) and does not affect strict-mode performance.
 - Lenient mode is a proprietary extension, not part of `nikunjy/rules`.
