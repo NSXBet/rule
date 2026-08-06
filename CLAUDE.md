@@ -38,6 +38,7 @@ The entire specification is defined through comprehensive test cases in `test/fi
 - **Array Length**: `.length` accessor for array size checks
 - **List Quantifiers**: `any`, `all`, `none` operators for element-level conditions
 - **List Filtering**: `where (predicate)` operator to filter arrays before applying `.length` or a quantifier (proprietary extension; not part of `nikunjy/rules`)
+- **Lenient Mode**: opt-in neutral semantics for missing attributes via `NewEngineWithOptions(WithLenientMode())` (proprietary extension; not part of `nikunjy/rules`)
 
 ### Rule Syntax Examples
 
@@ -120,6 +121,20 @@ All functionality is validated through the comprehensive test suite in `test/fix
 - **String Comparisons**: Lexicographic ordering for string relational operations
 - **Membership Operations**: Use strict type checking (no cross-type matching)
 - **Large Integer Support**: Preserve precision for integers > 2^53 using dual storage
+- **Missing Attributes**: In strict (default) mode, any comparison involving a
+  missing attribute returns `false`. In lenient mode
+  (`NewEngineWithOptions(WithLenientMode())`), a comparison predicate
+  involving a missing attribute returns `true` (neutral) — the identity
+  element for `and`-chains, the dominant pattern in betting lifecycle rules,
+  so a missing optional field drops out of the conjunction instead of
+  failing it. Neutrality is uniform across all comparison operators
+  (`eq`, `ne`, `lt`, `gt`, `le`, `ge`, `co`, `sw`, `ew`, `in`, `not in`,
+  datetime). Presence (`pr`), logical (`and`/`or`/`not`) and quantifier
+  operators are unaffected. Neutrality is only neutral inside an `and`-chain:
+  `not (x eq 10)` -> `false`, `or` short-circuits to `true`, `none` sees
+  `true`. Opt-in only; `NewEngine()` is strict. Only missing attributes
+  (key absent from the map) trigger the neutral path; explicit `nil` is
+  considered present and dispatched to the normal comparison path.
 
 ### List Operations
 - **Array Length**: Access `.length` on array properties (e.g., `items.length gt 3`)

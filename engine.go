@@ -25,6 +25,50 @@ func NewEngine() *Engine {
 	}
 }
 
+// Option configures an Engine created with NewEngineWithOptions.
+type Option func(*Engine)
+
+// WithLenientMode enables lenient (neutral) evaluation semantics.
+//
+// In lenient mode, a comparison predicate involving a missing attribute
+// returns true (neutral), imposing no constraint. This is the identity
+// element for AND-chains (the dominant pattern in betting lifecycle rules),
+// so a missing optional field drops out of the conjunction instead of
+// failing it:
+//
+//	x eq 10  (x absent) -> true	x ne 10  (x absent) -> true
+//	x lt 10  (x absent) -> true	x in [...]  (x absent) -> true
+//	x co "a" (x absent) -> true	x dl 30  (x absent) -> true
+//
+// Composition is intentional: neutral only inside an AND-chain. Under
+// negation or quantifiers neutrality becomes decisive, e.g.
+// `not (x eq 10)` -> false and `selections none (r gt 0)` sees true per
+// element where r is absent and returns false. For such rules prefer strict
+// mode (the default).
+//
+// Presence (pr), logical (and/or/not) and quantifier operators are
+// unaffected. The default (strict) mode is unchanged. Opt-in only.
+func WithLenientMode() Option {
+	return func(e *Engine) {
+		e.evaluator.lenient = true
+	}
+}
+
+// NewEngineWithOptions creates a new rule engine configured with the given
+// options. NewEngine() is equivalent to NewEngineWithOptions() with no
+// options (strict mode).
+func NewEngineWithOptions(opts ...Option) *Engine {
+	e := NewEngine()
+
+	for _, opt := range opts {
+		if opt != nil {
+			opt(e)
+		}
+	}
+
+	return e
+}
+
 func (e *Engine) AddQuery(rule string) error {
 	if _, exists := e.compiledRules.Load(rule); exists {
 		return nil // Already compiled

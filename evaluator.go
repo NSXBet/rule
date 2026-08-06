@@ -23,7 +23,12 @@ type EvalResult struct {
 }
 
 // Evaluator is an optimized evaluator that avoids allocations during evaluation.
-type Evaluator struct{}
+//
+// When lenient is true, the evaluator applies SQL-ish null-aware semantics
+// for comparisons involving missing attributes (see WithLenientMode).
+type Evaluator struct {
+	lenient bool
+}
 
 func NewEvaluator() *Evaluator {
 	return &Evaluator{}
@@ -600,7 +605,19 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 
 	// If either operand is invalid (missing attribute), comparison is false
 	if !leftResult.IsValid || !rightResult.IsValid {
-		result.Bool = false
+		if e.lenient {
+			// Neutral semantics: a comparison predicate over a missing attribute
+			// returns true, imposing no constraint. This is the identity element
+			// for AND-chains (the dominant pattern in betting lifecycle rules).
+			// Neutrality only holds inside an AND-chain: under `not`, `or`, or
+			// list quantifiers it becomes decisive (e.g. `not (x eq 10)` -> false,
+			// `or` short-circuits to true, `none` sees true per element). For
+			// those rules prefer strict mode.
+			result.Bool = true
+		} else {
+			result.Bool = false
+		}
+
 		return nil
 	}
 

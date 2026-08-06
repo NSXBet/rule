@@ -83,3 +83,32 @@ func TestRulesRound1(t *testing.T) {
 		}
 	}
 }
+
+// TestRulesLenient runs the lenient-mode fixtures against an engine created
+// with NewEngineWithOptions(WithLenientMode()). It verifies SQL-ish null
+// semantics for missing attributes.
+func TestRulesLenient(t *testing.T) {
+	all := [][]Case{
+		LenientEqualityTests,
+		LenientInequalityTests,
+		LenientRelationalTests,
+		LenientStringOpTests,
+		LenientMembershipTests,
+		LenientLogicalTests,
+		LenientNestedTests,
+		LenientDateTimeTests,
+		LenientPresenceTests,
+	}
+
+	for _, group := range all {
+		engine := rule.NewEngineWithOptions(rule.WithLenientMode())
+
+		for _, tc := range group {
+			t.Run(tc.Name, func(t *testing.T) {
+				got, err := engine.Evaluate(tc.Query, tc.Ctx)
+				require.NoError(t, err, "query=%q", tc.Query)
+				require.Equal(t, tc.Result, got, "query=%q", tc.Query)
+			})
+		}
+	}
+}

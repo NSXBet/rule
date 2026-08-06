@@ -701,3 +701,49 @@ func Example_ecommerce() {
 	// Free shipping eligible: true
 	// Weekend discount eligible: true
 }
+
+// Example_lenientMode demonstrates the opt-in lenient (neutral) evaluation
+// mode. A comparison predicate involving a missing attribute returns true
+// (neutral), imposing no constraint — the identity element for AND-chains.
+func Example_lenientMode() {
+	// Default engine: strict mode (missing attribute -> any comparison is false).
+	strict := rule.NewEngine()
+
+	// Opt-in lenient mode via functional options.
+	lenient := rule.NewEngineWithOptions(rule.WithLenientMode())
+
+	// Context with no "age" key.
+	ctx := rule.D{}
+
+	// In strict mode, "age eq 18" is false because age is missing.
+	rStrict, _ := strict.Evaluate("age eq 18", ctx)
+
+	// In lenient mode, a missing attribute makes the comparison neutral (true).
+	rLenientEq, _ := lenient.Evaluate("age eq 18", ctx)
+
+	// Neutrality holds for every comparison operator, so "age ne 18" is also true.
+	rLenientNe, _ := lenient.Evaluate("age ne 18", ctx)
+
+	// And for both-sides-missing: "a eq b" is neutral -> true.
+	rLenientBothMissing, _ := lenient.Evaluate("a eq b", ctx)
+
+	// And for membership: "role not in [...]" is neutral -> true.
+	rLenientNotIn, _ := lenient.Evaluate(`role not in ["admin","user"]`, ctx)
+
+	// AND-chains keep real constraints: a present field that is false still wins.
+	rAndChain, _ := lenient.Evaluate(`age eq 18 and status eq "settled"`, rule.D{"status": "pending"})
+
+	fmt.Printf("strict age eq 18: %t\n", rStrict)
+	fmt.Printf("lenient age eq 18: %t\n", rLenientEq)
+	fmt.Printf("lenient age ne 18: %t\n", rLenientNe)
+	fmt.Printf("lenient a eq b (both missing): %t\n", rLenientBothMissing)
+	fmt.Printf("lenient role not in [...]: %t\n", rLenientNotIn)
+	fmt.Printf("lenient age eq 18 and status eq settled (status=pending): %t", rAndChain)
+	// Output:
+	// strict age eq 18: false
+	// lenient age eq 18: true
+	// lenient age ne 18: true
+	// lenient a eq b (both missing): true
+	// lenient role not in [...]: true
+	// lenient age eq 18 and status eq settled (status=pending): false
+}
