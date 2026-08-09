@@ -1,5 +1,6 @@
 # Rule Engine 🚀
 
+
 [![Go Version](https://img.shields.io/badge/Go-1.24+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-All%20Passing-brightgreen.svg)](#)
