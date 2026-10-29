@@ -54,9 +54,17 @@ func WithLenientMode() Option {
 	}
 }
 
+// WithFloatMath uses float64 math and json.Number conversion instead of exact decimals.
+// Binary rounding can differ at decimal boundaries; overflow returns an error.
+func WithFloatMath() Option {
+	return func(e *Engine) {
+		e.evaluator.floatMath = true
+	}
+}
+
 // NewEngineWithOptions creates a new rule engine configured with the given
 // options. NewEngine() is equivalent to NewEngineWithOptions() with no
-// options (strict mode).
+// options (strict missing-attribute semantics and exact decimal math).
 func NewEngineWithOptions(opts ...Option) *Engine {
 	e := NewEngine()
 

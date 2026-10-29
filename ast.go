@@ -1,5 +1,7 @@
 package rule
 
+import "math/big"
+
 type NodeType uint8
 
 const (
@@ -10,15 +12,18 @@ const (
 	NodeArray
 	NodeProperty
 	NodeWhereCount
+	NodeMathCall
 )
 
 type ASTNode struct {
-	Type     NodeType
-	Operator TokenType
-	Left     *ASTNode
-	Right    *ASTNode
-	Value    Value
-	Children []*ASTNode
+	Type       NodeType
+	Operator   TokenType
+	Left       *ASTNode
+	Right      *ASTNode
+	Value      Value
+	Children   []*ASTNode
+	mathScale  *big.Int
+	floatScale float64
 }
 
 type ValueType uint8
@@ -40,7 +45,9 @@ type Value struct {
 	// IntValue stores large integers to preserve precision
 	IntValue int64
 	// IsInt indicates if this numeric value should be treated as an integer
-	IsInt bool
+	IsInt        bool
+	numberText   string
+	quotedNumber bool
 }
 
 func NewBinaryOpNode(op TokenType, left, right *ASTNode) *ASTNode {

@@ -5,7 +5,7 @@
 [![Tests](https://img.shields.io/badge/Tests-All%20Passing-brightgreen.svg)](#)
 [![Lint](https://img.shields.io/badge/Lint-100%25%20Clean-brightgreen.svg)](#)
 
-A **blazingly fast**, **zero-allocation** rule engine for Go that evaluates logical expressions in under 100 nanoseconds ⚡
+A Go rule engine with a zero-allocation path for native-number comparisons and explicit exact-decimal math.
 
 ## 📖 Table of Contents
 
@@ -65,7 +65,7 @@ func main() {
 }
 ```
 
-That's it! 🎉 You're now evaluating complex business rules in under 100 nanoseconds with zero memory allocations.
+This example uses native-value comparisons. By default, exact-decimal functions and `json.Number` inputs allocate; `WithFloatMath()` selects a non-allocating float64 path.
 
 ---
 
@@ -83,7 +83,7 @@ engine := rule.NewEngine()
 ```
 
 #### `NewEngineWithOptions(opts ...Option) *Engine`
-Creates a new rule engine configured with functional options. `NewEngine()` is equivalent to `NewEngineWithOptions()` with no options (strict mode).
+Creates a new rule engine configured with functional options. `NewEngine()` is equivalent to `NewEngineWithOptions()` with no options: strict missing-attribute semantics and exact decimal math.
 
 ```go
 // Strict (default, same as NewEngine()):
@@ -91,6 +91,9 @@ engine := rule.NewEngineWithOptions()
 
 // Lenient (neutral semantics) mode:
 engine := rule.NewEngineWithOptions(rule.WithLenientMode())
+
+// Approximate float64 math, combinable with WithLenientMode():
+engine := rule.NewEngineWithOptions(rule.WithFloatMath())
 ```
 
 See [Lenient Mode (Neutral Semantics)](#-lenient-mode-neutral-semantics) for details.
@@ -260,6 +263,74 @@ engine.Evaluate(`age le 18`, context)      // true
 engine.Evaluate(`rating ge 4.5`, context) // true
 ```
 
+### Decimal Math Functions
+
+The examples below use the default exact-decimal mode.
+
+| Function | Behavior | Example |
+|----------|----------|---------|
+| `round(value, places)` | Round to the requested decimal places; halfway values go away from zero | `round(1.005, 2) eq 1.01` |
+| `floor(value)` | Round toward negative infinity | `floor(-1.2) eq -2` |
+| `ceil(value)` | Round toward positive infinity | `ceil(-1.2) eq -1` |
+
+`places` must be an integer-valued numeric literal from `0` through `1000`.
+These functions return numbers for comparisons, not formatted strings with
+trailing zeros. Calls can be nested, used on either side of a numeric comparison,
+and used inside quantifier or `where` predicates.
+
+```go
+context := rule.D{"amount": json.Number("9007199254740993.125")}
+result, err := engine.Evaluate(`round(amount, 2) eq 9007199254740993.13`, context)
+// result: true, err: nil
+```
+
+Use `encoding/json.Number` or `json.Decoder.UseNumber()` to preserve decimal
+context values. Numeric literals retain their original decimal text. Native
+integers are exact; `float32` and `float64` inputs use their shortest round-trip
+decimal representation. Precision lost before evaluation cannot be recovered.
+Numeric strings are not coerced.
+
+In default mode, math results and `json.Number` values use exact comparisons,
+including `in` and `not in`. Native-number comparisons without these values
+retain their existing behavior. Missing arguments retain strict/lenient missing-attribute
+semantics. Explicit `nil`, nonnumeric operands, malformed decimals, and
+nonfinite floats produce typed errors instead of approximate results.
+Math results do not support string or datetime operators.
+
+Exact-decimal evaluation uses Go `math/big`, allocates memory, and is not covered
+by the native-number zero-allocation or sub-100ns targets. Compiled rounding
+scales are reused safely across concurrent evaluations. Decimal input text is
+limited to 10,000 characters and exponent magnitude to 10,000 to bound resource
+use. These functions are extensions, not part of `nikunjy/rules`.
+
+#### Float Math Mode
+
+```go
+engine := rule.NewEngineWithOptions(rule.WithFloatMath())
+result, err := engine.Evaluate(`round(amount, 2) eq 1.00`, rule.D{"amount": 1.005})
+// result: true, err: nil
+```
+
+`WithFloatMath()` keeps the same syntax and uses Go `math.Round`, `math.Floor`,
+and `math.Ceil` with `float64` arithmetic. It also converts every `json.Number`
+context value to `float64`, including comparisons without a math function.
+Large integers and decimal boundaries can lose precision. For example,
+`round(1.005, 2)` produces `1.00` in float mode and `1.01` in exact mode.
+Halfway values round away from zero in both modes, but binary scaling can
+move an apparent decimal halfway value to either side.
+
+Valid scalar evaluations with native numeric or `json.Number` inputs do not
+allocate on this path. Array handling and other operators retain their own
+allocation costs. Scales are precomputed; compiled rules can be shared by
+engines in either mode without mutation.
+
+The shared parser accepts precision literals `0..1000`. In float mode, a scale
+above `10^308`, a scaled-value overflow, or a `json.Number` too large for float64
+returns `ErrFloatMathOverflow`. There is no exact-decimal fallback.
+Underflow follows float64 semantics and can produce zero. Missing, nonnumeric,
+malformed, and nonfinite inputs retain validation and error propagation.
+Use exact mode when decimal rounding determines eligibility or payouts.
+
 ### String Operators
 
 | Operator | Description | Example | Result |
@@ -428,7 +499,7 @@ engine.Evaluate(`user.name eq profile.username`, context)           // true
 - ✅ **Dynamic Rules**: No need to hardcode values in rules
 - ✅ **Flexible Logic**: Compare any properties regardless of nesting depth
 - ✅ **Type Safe**: All comparison operators work (numeric, string, datetime, etc.)
-- ✅ **Performance**: Zero allocations, same speed as literal comparisons
+- ✅ **Performance**: Native-value comparisons retain their zero-allocation path. Exact decimal inputs allocate.
 
 ### DateTime Operators 📅
 
@@ -604,9 +675,9 @@ engine.Evaluate(`selections where (odd ge 1.4) all (is_live eq true)`, context) 
 
 #### `where` rules
 
-- `<source> where (<predicate>).length <op> <number>` — counts elements where
-  predicate is true. Zero-allocation: the engine never materializes the
-  filtered array.
+- `<source> where (<predicate>).length <op> <number>`: counts elements where
+  the predicate is true without materializing a filtered array. Predicate costs
+  still apply, including allocations for exact-decimal math.
 - `<source> where (<predicate>) any|all|none (<sub>)` — equivalent to applying
   the quantifier on the filtered subset. Internally rewritten as a single
   quantifier over the source array with a composed predicate.
@@ -775,9 +846,35 @@ This library believes in **transparency over marketing** 📊. Here are objectiv
 
 > 💡 **Disclaimer**: This is not trying to discourage anyone from using `nikunjy/rules` or Go templates - they're excellent libraries with different design goals. This is simply offering another option that might benefit your specific use case, especially when ultra-low latency and zero allocations are critical.
 
+### Exact vs Float Math
+
+Measured on Apple M4 Pro, Go 1.26.8. Values are medians of five runs with
+precompiled rules evaluated through `Engine.EvaluateCompiled`; parsing,
+compilation, and query-cache lookup are excluded. Both modes use the same
+input (`1.234` as `float64` or `json.Number("1.234")`) and predicates:
+`round(value, 2) eq 1.23`, `floor(value) eq 1`, and `ceil(value) eq 2`.
+
+```bash
+go test ./... -run '^$' -bench '^(BenchmarkMathModes|BenchmarkOptimizedEngineSimple)$' -benchmem -benchtime=300ms -count=5
+```
+
+| Function / input | Exact ns/op | Float ns/op | Speedup | Exact B/op | Exact allocs/op |
+|------------------|-------------|-------------|---------|------------|-----------------|
+| `round` / native | 638.4 | 20.21 | 31.6x | 744 | 31 |
+| `round` / JSON | 590.2 | 37.03 | 15.9x | 736 | 30 |
+| `floor` / native | 552.0 | 19.88 | 27.8x | 640 | 28 |
+| `floor` / JSON | 525.2 | 36.78 | 14.3x | 632 | 27 |
+| `ceil` / native | 571.7 | 19.96 | 28.6x | 688 | 29 |
+| `ceil` / JSON | 539.2 | 36.58 | 14.7x | 680 | 28 |
+
+Float mode used **0 B/op and 0 allocs/op in every row**. These are complete
+predicate evaluations, not isolated calls to Go `math` functions.
+The existing cached native `x eq 10` benchmark measured 22.88 ns/op with zero
+allocations (median of five runs).
+
 ### Performance Results
 
-All benchmarks run on: `Intel(R) Core(TM) i9-14900KF, Go 1.21+`
+Historical comparison benchmarks below ran on `Intel(R) Core(TM) i9-14900KF, Go 1.21+`.
 
 #### Simple Operations (`x eq 10`)
 
@@ -1135,7 +1232,7 @@ make format
 
 Any changes to core evaluation logic must maintain:
 - **Sub-100ns evaluation times** for simple operations
-- **Zero allocations** during rule evaluation  
+- **Zero allocations** on the native-value and scalar float-math paths. Exact-decimal functions and exact-mode `json.Number` inputs are explicit exceptions.
 - **Thread safety** for concurrent usage
 
 ---

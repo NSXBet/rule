@@ -1,6 +1,8 @@
 package rule
 
 import (
+	"encoding/json"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -22,12 +24,12 @@ type EvalResult struct {
 	IsInt bool
 }
 
-// Evaluator is an optimized evaluator that avoids allocations during evaluation.
+// Evaluator evaluates rules with a zero-allocation path for native values.
 //
-// When lenient is true, the evaluator applies SQL-ish null-aware semantics
-// for comparisons involving missing attributes (see WithLenientMode).
+// Exact-decimal math allocates; lenient controls missing-attribute comparisons.
 type Evaluator struct {
-	lenient bool
+	lenient   bool
+	floatMath bool
 }
 
 func NewEvaluator() *Evaluator {
@@ -70,6 +72,9 @@ func (e *Evaluator) evaluateNode(node *ASTNode, context D, result *EvalResult) e
 	case NodeWhereCount:
 		return e.evaluateWhereCount(node, context, result)
 
+	case NodeMathCall:
+		return e.evaluateMathCall(node, context, result)
+
 	default:
 		return ErrInvalidNode
 	}
@@ -83,6 +88,7 @@ func (e *Evaluator) evaluateLiteral(node *ASTNode, result *EvalResult) error {
 	case ValueString:
 		result.Str = node.Value.StrValue
 	case ValueNumber:
+		result.OriginalValue = &node.Value
 		result.Num = node.Value.NumValue
 		result.IntValue = node.Value.IntValue
 		result.IsInt = node.Value.IsInt
@@ -112,9 +118,8 @@ func (e *Evaluator) evaluateIdentifier(node *ASTNode, context D, result *EvalRes
 	}
 
 	result.IsValid = true
-	e.setResultFromAny(result, value)
 
-	return nil
+	return e.setResultFromAny(result, value)
 }
 
 func (e *Evaluator) evaluateProperty(node *ASTNode, context D, result *EvalResult) error {
@@ -137,9 +142,8 @@ func (e *Evaluator) evaluateProperty(node *ASTNode, context D, result *EvalResul
 		// If this is the last segment, return the value
 		if i == lastIdx {
 			result.IsValid = true
-			e.setResultFromAny(result, currentValue)
 
-			return nil
+			return e.setResultFromAny(result, currentValue)
 		}
 
 		// Otherwise, continue navigation
@@ -290,7 +294,7 @@ func (e *Evaluator) evaluatePresenceOperator(node *ASTNode, context D, result *E
 		return e.checkIdentifierPresence(node, context, result)
 	case NodeProperty:
 		return e.checkPropertyPresence(node, context, result)
-	case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray, NodeWhereCount:
+	case NodeBinaryOp, NodeUnaryOp, NodeLiteral, NodeArray, NodeWhereCount, NodeMathCall:
 		return ErrInvalidOperator // Invalid node types for PR operator
 	default:
 		return ErrInvalidOperator
@@ -343,9 +347,7 @@ func (e *Evaluator) setPresenceResult(result *EvalResult, exists bool) {
 	result.IsValid = true
 }
 
-// evaluateWhereCount evaluates "<source> where (<predicate>).length".
-// It counts elements in the source array where the predicate evaluates to true.
-// Zero allocation: only uses stack variables, no new slice allocation.
+// evaluateWhereCount counts matches without materializing a filtered array.
 func (e *Evaluator) evaluateWhereCount(node *ASTNode, context D, result *EvalResult) error {
 	result.IsValid = true
 	result.Type = ValueNumber
@@ -359,8 +361,7 @@ func (e *Evaluator) evaluateWhereCount(node *ASTNode, context D, result *EvalRes
 	// Evaluate source to get the array
 	var sourceResult EvalResult
 	if err := e.evaluateNode(node.Left, context, &sourceResult); err != nil {
-		// Source evaluation error: surface as count 0
-		return nil //nolint:nilerr // intentionally swallowing source errors
+		return err
 	}
 
 	// If source is not valid or not an array, return count 0
@@ -390,7 +391,7 @@ func (e *Evaluator) evaluateWhereCount(node *ASTNode, context D, result *EvalRes
 		predicateResult.OriginalValue = nil
 
 		if predErr := e.evaluateNode(predicate, elemMap, &predicateResult); predErr != nil {
-			continue // Skip element if predicate evaluation fails
+			return predErr
 		}
 
 		if e.toBool(&predicateResult) {
@@ -495,22 +496,22 @@ func (e *Evaluator) evaluateQuantifier(node *ASTNode, context D, result *EvalRes
 
 	switch node.Operator { //nolint:exhaustive // only quantifier operators are valid here
 	case ANY:
-		result.Bool = e.evaluateQuantifierAny(node.Right, arr)
+		result.Bool, err = e.evaluateQuantifierAny(node.Right, arr)
 	case ALL:
-		result.Bool = e.evaluateQuantifierAll(node.Right, arr)
+		result.Bool, err = e.evaluateQuantifierAll(node.Right, arr)
 	case NONE:
-		result.Bool = e.evaluateQuantifierNone(node.Right, arr)
+		result.Bool, err = e.evaluateQuantifierNone(node.Right, arr)
 	default:
 		result.IsValid = false
 		return ErrInvalidOperator
 	}
 
-	return nil
+	return err
 }
 
 // evaluateQuantifierAny returns true if any element in the array satisfies the sub-expression.
 // Short-circuits on first match.
-func (e *Evaluator) evaluateQuantifierAny(subExpr *ASTNode, arr []any) bool {
+func (e *Evaluator) evaluateQuantifierAny(subExpr *ASTNode, arr []any) (bool, error) {
 	var subResult EvalResult
 
 	for _, elem := range arr {
@@ -523,46 +524,46 @@ func (e *Evaluator) evaluateQuantifierAny(subExpr *ASTNode, arr []any) bool {
 		subResult.OriginalValue = nil
 
 		if err := e.evaluateNode(subExpr, elemMap, &subResult); err != nil {
-			continue
+			return false, err
 		}
 
 		if e.toBool(&subResult) {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 // evaluateQuantifierAll returns true if all elements in the array satisfy the sub-expression.
 // Returns true for empty arrays (vacuous truth). Short-circuits on first non-match.
-func (e *Evaluator) evaluateQuantifierAll(subExpr *ASTNode, arr []any) bool {
+func (e *Evaluator) evaluateQuantifierAll(subExpr *ASTNode, arr []any) (bool, error) {
 	var subResult EvalResult
 
 	for _, elem := range arr {
 		elemMap, isMap := elem.(map[string]any)
 		if !isMap {
-			return false
+			return false, nil
 		}
 
 		subResult.IsValid = false
 		subResult.OriginalValue = nil
 
 		if err := e.evaluateNode(subExpr, elemMap, &subResult); err != nil {
-			return false
+			return false, err
 		}
 
 		if !e.toBool(&subResult) {
-			return false
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }
 
 // evaluateQuantifierNone returns true if no element in the array satisfies the sub-expression.
 // Returns true for empty arrays. Short-circuits on first match.
-func (e *Evaluator) evaluateQuantifierNone(subExpr *ASTNode, arr []any) bool {
+func (e *Evaluator) evaluateQuantifierNone(subExpr *ASTNode, arr []any) (bool, error) {
 	var subResult EvalResult
 
 	for _, elem := range arr {
@@ -575,15 +576,15 @@ func (e *Evaluator) evaluateQuantifierNone(subExpr *ASTNode, arr []any) bool {
 		subResult.OriginalValue = nil
 
 		if err := e.evaluateNode(subExpr, elemMap, &subResult); err != nil {
-			continue
+			return false, err
 		}
 
 		if e.toBool(&subResult) {
-			return false
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }
 
 // evaluateComparisonOperator handles all comparison operators.
@@ -621,6 +622,18 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 		return nil
 	}
 
+	if e.floatMath && (isFloatMathResult(&leftResult) || isFloatMathResult(&rightResult)) &&
+		node.Operator != IN && node.Operator != NOT_IN {
+		return compareFloatMath(node.Operator, &leftResult, &rightResult, result)
+	}
+
+	_, leftExact := leftResult.OriginalValue.(*big.Rat)
+
+	_, rightExact := rightResult.OriginalValue.(*big.Rat)
+	if (leftExact || rightExact) && node.Operator != IN && node.Operator != NOT_IN {
+		return compareDecimal(node.Operator, &leftResult, &rightResult, result)
+	}
+
 	return e.performComparison(node.Operator, &leftResult, &rightResult, result)
 }
 
@@ -649,10 +662,11 @@ func (e *Evaluator) performComparison(
 		result.Bool = e.stringStartsWith(left, right)
 	case EW:
 		result.Bool = e.stringEndsWith(left, right)
-	case IN:
-		result.Bool = e.membershipCheck(left, right)
-	case NOT_IN:
-		result.Bool = !e.membershipCheck(left, right)
+	case IN, NOT_IN:
+		matches, err := e.membershipCheck(left, right)
+		result.Bool = matches != (operator == NOT_IN)
+
+		return err
 	case DQ:
 		result.Bool = e.compareDateTimes(
 			left,
@@ -722,13 +736,15 @@ func (e *Evaluator) performComparison(
 	return nil
 }
 
-func (e *Evaluator) setResultFromAny(result *EvalResult, value any) {
+func (e *Evaluator) setResultFromAny(result *EvalResult, value any) error {
 	result.OriginalValue = value
 
 	switch v := value.(type) {
 	case bool:
 		result.Type = ValueBoolean
 		result.Bool = v
+	case json.Number:
+		return e.setJSONNumberResult(result, v)
 	case int, int8, int16, int32, int64:
 		e.setIntegerResult(result, v)
 	case uint, uint8, uint16, uint32, uint64:
@@ -752,6 +768,8 @@ func (e *Evaluator) setResultFromAny(result *EvalResult, value any) {
 		result.Type = ValueString
 		result.Str = e.toString(value)
 	}
+
+	return nil
 }
 
 func (e *Evaluator) setIntegerResult(result *EvalResult, value any) {
@@ -936,40 +954,53 @@ func (e *Evaluator) stringEndsWith(left, right *EvalResult) bool {
 	return e.hasSuffixIgnoreCase(leftStr, rightStr)
 }
 
-func (e *Evaluator) membershipCheck(left, right *EvalResult) bool {
-	// Handle Value array (from literals)
-	if right.Type == ValueArray && right.Arr != nil {
-		for _, item := range right.Arr {
+func (e *Evaluator) membershipCheck(left, right *EvalResult) (bool, error) {
+	if right.Type != ValueArray {
+		return false, nil
+	}
+
+	if right.Arr != nil {
+		for i := range right.Arr {
 			var itemResult EvalResult
 
-			e.setResultFromValue(&itemResult, &item)
+			e.setResultFromValue(&itemResult, &right.Arr[i])
 
-			if e.compareEqualStrict(left, &itemResult) {
-				return true
+			matches, err := e.equalMembership(left, &itemResult)
+			if err != nil {
+				return false, err
+			}
+
+			if matches {
+				return true, nil
 			}
 		}
 
-		return false
+		return false, nil
 	}
 
-	// Handle []any array (from context variables)
-	if right.Type == ValueArray && right.OriginalValue != nil {
-		if arr, ok := right.OriginalValue.([]any); ok {
-			for _, item := range arr {
-				var itemResult EvalResult
+	arr, ok := right.OriginalValue.([]any)
+	if !ok {
+		return false, nil
+	}
 
-				e.setResultFromAny(&itemResult, item)
+	for _, item := range arr {
+		var itemResult EvalResult
 
-				if e.compareEqualStrict(left, &itemResult) {
-					return true
-				}
-			}
+		if err := e.setResultFromAny(&itemResult, item); err != nil {
+			return false, err
+		}
 
-			return false
+		matches, err := e.equalMembership(left, &itemResult)
+		if err != nil {
+			return false, err
+		}
+
+		if matches {
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func (e *Evaluator) setResultFromValue(result *EvalResult, value *Value) {
@@ -980,6 +1011,7 @@ func (e *Evaluator) setResultFromValue(result *EvalResult, value *Value) {
 	case ValueString:
 		result.Str = value.StrValue
 	case ValueNumber:
+		result.OriginalValue = value
 		result.Num = value.NumValue
 		result.IntValue = value.IntValue
 		result.IsInt = value.IsInt
@@ -1002,6 +1034,10 @@ func (e *Evaluator) toBool(result *EvalResult) bool {
 	case ValueBoolean:
 		return result.Bool
 	case ValueNumber:
+		if decimal, ok := result.OriginalValue.(*big.Rat); ok {
+			return decimal.Sign() != 0
+		}
+
 		return result.Num != 0
 	case ValueString:
 		return result.Str != ""
