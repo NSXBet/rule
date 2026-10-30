@@ -38,6 +38,8 @@ func ValidateAST(node *ASTNode) error {
 		return nil
 	case NodeWhereCount:
 		return validateWhereCountNode(node)
+	case NodeMathCall:
+		return validateMathCallNode(node)
 	}
 
 	return nil
@@ -111,7 +113,7 @@ func validateInOperation(node *ASTNode) error {
 		case NodeIdentifier, NodeProperty:
 			// Allow identifiers/properties as they might evaluate to arrays at runtime
 			return nil
-		case NodeBinaryOp, NodeUnaryOp, NodeArray, NodeWhereCount:
+		case NodeBinaryOp, NodeUnaryOp, NodeArray, NodeWhereCount, NodeMathCall:
 			return ErrInvalidInOperand
 		}
 	}
@@ -124,6 +126,10 @@ func validateStringOperation(node *ASTNode) error {
 	// But we'll allow identifiers/properties as they might be strings at runtime
 	left := node.Left
 	right := node.Right
+
+	if left.Type == NodeMathCall || right.Type == NodeMathCall {
+		return ErrInvalidStringOp
+	}
 
 	// Check if we're trying to use string operators on obviously non-string literals
 	if left.Type == NodeLiteral {
