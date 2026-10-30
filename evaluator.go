@@ -1064,6 +1064,10 @@ func (e *Evaluator) resultToString(result *EvalResult) string {
 	case ValueString:
 		return result.Str
 	case ValueNumber:
+		if result.Num == 0 {
+			return "0"
+		}
+
 		return strconv.FormatFloat(result.Num, 'f', -1, 64)
 	case ValueBoolean:
 		if result.Bool {

@@ -298,6 +298,9 @@ existing behavior. Missing arguments retain strict/lenient missing-attribute
 semantics. Explicit `nil`, nonnumeric operands, malformed decimals, and
 nonfinite floats produce typed errors instead of approximate results.
 Math results do not support string or datetime operators.
+String operators normalize numeric zero, including negative zero and float64
+underflow to zero, to `"0"` in both modes. String inputs such as `"-0"` are
+unchanged.
 
 Exact-decimal evaluation uses Go `math/big`, allocates memory, and is not covered
 by the native-number zero-allocation or sub-100ns targets. Compiled rounding

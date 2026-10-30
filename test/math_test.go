@@ -54,6 +54,53 @@ func TestJSONNumberNonMathComparisons(t *testing.T) {
 	}
 }
 
+func TestZeroStringNormalization(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     any
+		wantMinus bool
+		wantZero  bool
+	}{
+		{"JSON negative zero", json.Number("-0"), false, true},
+		{"JSON decimal negative zero", json.Number("-0.0"), false, true},
+		{"JSON exponent negative zero", json.Number("-0e2"), false, true},
+		{"JSON underflow", json.Number("-1e-999"), false, true},
+		{"JSON positive zero", json.Number("0"), false, true},
+		{"float64 negative zero", math.Copysign(0, -1), false, true},
+		{"float32 negative zero", float32(math.Copysign(0, -1)), false, true},
+		{"native positive zero", 0.0, false, true},
+		{"negative nonzero", -1.5, true, false},
+		{"string negative zero", "-0", true, false},
+	}
+
+	for _, mode := range []string{"exact", "float"} {
+		t.Run(mode, func(t *testing.T) {
+			engine := rule.NewEngine()
+			if mode == "float" {
+				engine = rule.NewEngineWithOptions(rule.WithFloatMath())
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					for _, check := range []struct {
+						query string
+						want  bool
+					}{
+						{`value sw "-"`, tt.wantMinus},
+						{`value co "-"`, tt.wantMinus},
+						{`"0" ew value`, tt.wantZero},
+					} {
+						got, err := engine.Evaluate(check.query, rule.D{"value": tt.value})
+						if err != nil || got != check.want {
+							t.Errorf("Evaluate(%q) = %v, %v; want %v, nil", check.query, got, err, check.want)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestMathNonMathComparisons(t *testing.T) {
 	for _, engine := range []*rule.Engine{rule.NewEngine(), rule.NewEngineWithOptions(rule.WithFloatMath())} {
 		for _, query := range []string{"floor(value) dq 123", "123 dq floor(value)"} {
