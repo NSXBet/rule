@@ -7,9 +7,63 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/NSXBet/rule"
 )
+
+func TestJSONNumberNonMathComparisons(t *testing.T) {
+	tests := []struct {
+		query   string
+		context rule.D
+		want    bool
+	}{
+		{`value co "23"`, rule.D{"value": json.Number("123")}, true},
+		{`value sw "-12"`, rule.D{"value": json.Number("-123.5")}, true},
+		{`value ew ".5"`, rule.D{"value": json.Number("123.5")}, true},
+		{`"123" co value`, rule.D{"value": json.Number("23")}, true},
+		{`value co "9"`, rule.D{"value": json.Number("123")}, false},
+		{"value dq 123", rule.D{"value": json.Number("123.9")}, true},
+		{"123 dq value", rule.D{"value": json.Number("123")}, true},
+		{"value dn 124", rule.D{"value": json.Number("123")}, true},
+		{"value be 124", rule.D{"value": json.Number("123")}, true},
+		{"value bq 123", rule.D{"value": json.Number("123")}, true},
+		{"value af 122", rule.D{"value": json.Number("123")}, true},
+		{"value aq 123", rule.D{"value": json.Number("123")}, true},
+		{"value dl 1", rule.D{"value": json.Number("0")}, false},
+		{"value dg 1", rule.D{"value": json.Number("0")}, true},
+		{"value dl days", rule.D{"value": time.Now().Add(-48 * time.Hour), "days": json.Number("3")}, true},
+		{"value dg days", rule.D{"value": time.Now().Add(-48 * time.Hour), "days": json.Number("3")}, false},
+		{"value dq -1", rule.D{"value": json.Number("-1.9")}, true},
+		{`value ew ".25"`, rule.D{"value": json.Number("1.2325e2")}, true},
+		{`value ew "992"`, rule.D{"value": json.Number("9007199254740993")}, true},
+		{"value eq 9007199254740993", rule.D{"value": json.Number("9007199254740993")}, true},
+		{"value ne 9007199254740992", rule.D{"value": json.Number("9007199254740993")}, true},
+		{"value eq 0", rule.D{"value": json.Number("1e-999")}, false},
+		{"value gt 1", rule.D{"value": json.Number("1e999")}, true},
+	}
+	engine := rule.NewEngine()
+
+	for _, tt := range tests {
+		t.Run(tt.query, func(t *testing.T) {
+			got, err := engine.Evaluate(tt.query, tt.context)
+			if err != nil || got != tt.want {
+				t.Fatalf("Evaluate(%q) = %v, %v; want %v, nil", tt.query, got, err, tt.want)
+			}
+		})
+	}
+}
+
+func TestMathNonMathComparisons(t *testing.T) {
+	for _, engine := range []*rule.Engine{rule.NewEngine(), rule.NewEngineWithOptions(rule.WithFloatMath())} {
+		for _, query := range []string{"floor(value) dq 123", "123 dq floor(value)"} {
+			_, err := engine.Evaluate(query, rule.D{"value": 123.5})
+			if !errors.Is(err, rule.ErrInvalidMathOperand) {
+				t.Errorf("Evaluate(%q) error = %v; want %v", query, err, rule.ErrInvalidMathOperand)
+			}
+		}
+	}
+}
 
 func TestDecimalMath(t *testing.T) {
 	tests := []struct {

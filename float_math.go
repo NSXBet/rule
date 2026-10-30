@@ -16,6 +16,7 @@ func (e *Evaluator) setJSONNumberResult(result *EvalResult, value json.Number) e
 		}
 
 		result.OriginalValue = decimal
+		result.Num, _ = decimal.Float64()
 
 		return nil
 	}

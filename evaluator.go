@@ -622,6 +622,11 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 		return nil
 	}
 
+	if (node.Left.Type == NodeMathCall || node.Right.Type == NodeMathCall) &&
+		!isMathComparison(node.Operator) && node.Operator != IN && node.Operator != NOT_IN {
+		return ErrInvalidMathOperand
+	}
+
 	if e.floatMath && (isFloatMathResult(&leftResult) || isFloatMathResult(&rightResult)) &&
 		node.Operator != IN && node.Operator != NOT_IN {
 		return compareFloatMath(node.Operator, &leftResult, &rightResult, result)
@@ -630,7 +635,7 @@ func (e *Evaluator) evaluateComparisonOperator(node *ASTNode, context D, result 
 	_, leftExact := leftResult.OriginalValue.(*big.Rat)
 
 	_, rightExact := rightResult.OriginalValue.(*big.Rat)
-	if (leftExact || rightExact) && node.Operator != IN && node.Operator != NOT_IN {
+	if (leftExact || rightExact) && isMathComparison(node.Operator) {
 		return compareDecimal(node.Operator, &leftResult, &rightResult, result)
 	}
 

@@ -290,9 +290,11 @@ integers are exact; `float32` and `float64` inputs use their shortest round-trip
 decimal representation. Precision lost before evaluation cannot be recovered.
 Numeric strings are not coerced.
 
-In default mode, math results and `json.Number` values use exact comparisons,
-including `in` and `not in`. Native-number comparisons without these values
-retain their existing behavior. Missing arguments retain strict/lenient missing-attribute
+In default mode, math results and `json.Number` values use exact numeric comparisons,
+including `in` and `not in`. String and datetime operators on `json.Number` values
+use their float64 projection, with the same precision and range limits as native
+float64 inputs. Native-number comparisons without these values retain their
+existing behavior. Missing arguments retain strict/lenient missing-attribute
 semantics. Explicit `nil`, nonnumeric operands, malformed decimals, and
 nonfinite floats produce typed errors instead of approximate results.
 Math results do not support string or datetime operators.
