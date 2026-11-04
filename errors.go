@@ -78,4 +78,20 @@ var (
 		"WHERE_REQUIRES_LENGTH",
 		"where can only be followed by .length",
 	}
+
+	// ErrUnknownMathFunction indicates an unsupported function call.
+	ErrUnknownMathFunction = &EngineError{"UNKNOWN_MATH_FUNCTION", "Unknown math function"}
+	// ErrInvalidMathArguments indicates incorrect math function arguments.
+	ErrInvalidMathArguments = &EngineError{"INVALID_MATH_ARGUMENTS", "Invalid math function arguments"}
+	// ErrInvalidMathPrecision indicates round precision outside the supported integer range.
+	ErrInvalidMathPrecision = &EngineError{
+		"INVALID_MATH_PRECISION",
+		"round precision must be an integer literal from 0 to 1000",
+	}
+	// ErrInvalidMathOperand indicates a nonnumeric math function argument.
+	ErrInvalidMathOperand = &EngineError{"INVALID_MATH_OPERAND", "Math functions require a numeric operand"}
+	// ErrInvalidDecimal indicates an invalid or unsupported decimal representation.
+	ErrInvalidDecimal = &EngineError{"INVALID_DECIMAL", "Invalid decimal value"}
+	// ErrFloatMathOverflow indicates a float math value or scale outside float64 range.
+	ErrFloatMathOverflow = &EngineError{"FLOAT_MATH_OVERFLOW", "Float math exceeds float64 range"}
 )

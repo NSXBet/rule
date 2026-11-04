@@ -309,21 +309,19 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 		return expr, nil
 
 	case STRING:
-		value := p.curToken.Value
+		token := p.curToken
 		p.advance()
 
-		// Check if this string represents a large integer
-		if intVal, isLargeInt := p.isLargeIntegerString(value); isLargeInt {
-			return NewLargeIntegerLiteralNode(intVal), nil
-		}
-
-		return NewStringLiteralNode(value), nil
+		return &ASTNode{Type: NodeLiteral, Value: p.parseStringValue(token)}, nil
 
 	case NUMBER:
-		value := p.curToken.NumValue
+		token := p.curToken
 		p.advance()
 
-		return NewNumberLiteralNode(value), nil
+		node := NewNumberLiteralNode(token.NumValue)
+		node.Value.numberText = token.Value
+
+		return node, nil
 
 	case BOOLEAN:
 		value := p.curToken.BoolValue
@@ -335,6 +333,10 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 		return p.parseArray()
 
 	case IDENTIFIER:
+		if p.peek().Type == PAREN_OPEN {
+			return p.parseMathCall()
+		}
+
 		return p.parseIdentifierOrProperty()
 
 	case EOF,
@@ -378,6 +380,23 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 	}
 }
 
+func (p *Parser) parseStringValue(token Token) Value {
+	if intVal, isLargeInt := p.isLargeIntegerString(token.Value); isLargeInt {
+		text := numericTokenText(token)
+
+		return Value{
+			Type:         ValueNumber,
+			NumValue:     float64(intVal),
+			IntValue:     intVal,
+			IsInt:        true,
+			numberText:   text,
+			quotedNumber: text == "",
+		}
+	}
+
+	return Value{Type: ValueString, StrValue: token.Value}
+}
+
 func (p *Parser) parseArray() (*ASTNode, error) {
 	if err := p.expect(ARRAY_START); err != nil {
 		return nil, err
@@ -389,29 +408,16 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 		for {
 			switch p.curToken.Type {
 			case STRING:
-				value := p.curToken.Value
-				// Check if this string represents a large integer
-				if intVal, isLargeInt := p.isLargeIntegerString(value); isLargeInt {
-					elements = append(elements, Value{
-						Type:     ValueNumber,
-						NumValue: float64(intVal),
-						IntValue: intVal,
-						IsInt:    true,
-					})
-				} else {
-					elements = append(elements, Value{
-						Type:     ValueString,
-						StrValue: value,
-					})
-				}
+				elements = append(elements, p.parseStringValue(p.curToken))
 
 				p.advance()
 
 			case NUMBER:
 				elements = append(elements, Value{
-					Type:     ValueNumber,
-					NumValue: p.curToken.NumValue,
-					IsInt:    false,
+					Type:       ValueNumber,
+					NumValue:   p.curToken.NumValue,
+					IsInt:      false,
+					numberText: p.curToken.Value,
 				})
 
 				p.advance()

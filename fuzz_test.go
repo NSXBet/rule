@@ -21,6 +21,12 @@ func FuzzRuleExecution(f *testing.F) {
 	f.Add("email ew \".com\"")
 	f.Add("created_at dl 30")
 	f.Add("updated_at dg 365")
+	f.Add("round(price, 2) ge 50")
+	f.Add("floor(price) eq ceil(price)")
+	f.Add("round(round(1.005, 3), 2) eq 1.01")
+	f.Add("round(1, 2.000000000000000000001)")
+	f.Add("round(price, 1001)")
+	f.Add("unknown(price)")
 
 	// Add some invalid rules to test error handling
 	f.Add("age gt")
