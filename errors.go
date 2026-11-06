@@ -78,6 +78,11 @@ var (
 		"WHERE_REQUIRES_LENGTH",
 		"where can only be followed by .length",
 	}
+	// ErrInvalidUnwrapField indicates unwrap modifier lacks child array field.
+	ErrInvalidUnwrapField = &EngineError{
+		"INVALID_UNWRAP_FIELD",
+		"unwrap modifier requires a child array field",
+	}
 
 	// ErrUnknownMathFunction indicates an unsupported function call.
 	ErrUnknownMathFunction = &EngineError{"UNKNOWN_MATH_FUNCTION", "Unknown math function"}

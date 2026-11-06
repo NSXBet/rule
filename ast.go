@@ -16,14 +16,15 @@ const (
 )
 
 type ASTNode struct {
-	Type       NodeType
-	Operator   TokenType
-	Left       *ASTNode
-	Right      *ASTNode
-	Value      Value
-	Children   []*ASTNode
-	mathScale  *big.Int
-	floatScale float64
+	Type        NodeType
+	Operator    TokenType
+	Left        *ASTNode
+	Right       *ASTNode
+	Value       Value
+	Children    []*ASTNode
+	UnwrapField string
+	mathScale   *big.Int
+	floatScale  float64
 }
 
 type ValueType uint8
