@@ -175,6 +175,8 @@ func adjustMathQuotient(name string, value *big.Rat, quotient, remainder *big.In
 		if doubled.Cmp(value.Denom()) >= 0 {
 			quotient.Add(quotient, big.NewInt(int64(value.Sign())))
 		}
+	case mathTruncFunction:
+		// QuoRem already truncates toward zero.
 	case mathFloorFunction:
 		if remainder.Sign() < 0 {
 			quotient.Sub(quotient, big.NewInt(1))

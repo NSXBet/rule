@@ -270,13 +270,14 @@ The examples below use the default exact-decimal mode.
 | Function | Behavior | Example |
 |----------|----------|---------|
 | `round(value, places)` | Round to the requested decimal places; halfway values go away from zero | `round(1.005, 2) eq 1.01` |
+| `trunc(value, places)` | Drop digits past the requested decimal places toward zero | `trunc(-1.239, 2) eq -1.23` |
 | `floor(value)` | Round toward negative infinity | `floor(-1.2) eq -2` |
 | `ceil(value)` | Round toward positive infinity | `ceil(-1.2) eq -1` |
 
-`places` must be an integer-valued numeric literal from `0` through `1000`.
-These functions return numbers for comparisons, not formatted strings with
-trailing zeros. Calls can be nested, used on either side of a numeric comparison,
-and used inside quantifier or `where` predicates.
+`places` in `round` and `trunc` must be an integer-valued numeric literal from
+`0` through `1000`. These functions return numbers for comparisons, not formatted
+strings with trailing zeros. Calls can be nested, used on either side of a numeric
+comparison, and used inside quantifier or `where` predicates.
 
 ```go
 context := rule.D{"amount": json.Number("9007199254740993.125")}
@@ -303,8 +304,8 @@ underflow to zero, to `"0"` in both modes. String inputs such as `"-0"` are
 unchanged.
 
 Exact-decimal evaluation uses Go `math/big`, allocates memory, and is not covered
-by the native-number zero-allocation or sub-100ns targets. Compiled rounding
-scales are reused safely across concurrent evaluations. Decimal input text is
+by the native-number zero-allocation or sub-100ns targets. Compiled math scales
+are reused safely across concurrent evaluations. Decimal input text is
 limited to 10,000 characters and exponent magnitude to 10,000 to bound resource
 use. These functions are extensions, not part of `nikunjy/rules`.
 
@@ -312,12 +313,12 @@ use. These functions are extensions, not part of `nikunjy/rules`.
 
 ```go
 engine := rule.NewEngineWithOptions(rule.WithFloatMath())
-result, err := engine.Evaluate(`round(amount, 2) eq 1.00`, rule.D{"amount": 1.005})
+result, err := engine.Evaluate(`trunc(amount, 2) eq 1.00`, rule.D{"amount": 1.005})
 // result: true, err: nil
 ```
 
-`WithFloatMath()` keeps the same syntax and uses Go `math.Round`, `math.Floor`,
-and `math.Ceil` with `float64` arithmetic. It also converts every `json.Number`
+`WithFloatMath()` keeps the same syntax and uses Go `math.Round`, `math.Trunc`,
+`math.Floor`, and `math.Ceil` with `float64` arithmetic. It also converts every `json.Number`
 context value to `float64`, including comparisons without a math function.
 Large integers and decimal boundaries can lose precision. For example,
 `round(1.005, 2)` produces `1.00` in float mode and `1.01` in exact mode.

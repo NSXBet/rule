@@ -11,13 +11,14 @@ const (
 	maxDecimalPlaces  = 1000
 	decimalRadix      = 10
 	mathRoundFunction = "round"
+	mathTruncFunction = "trunc"
 	mathFloorFunction = "floor"
 	mathCeilFunction  = "ceil"
 )
 
 func (p *Parser) parseMathCall() (*ASTNode, error) {
 	name := p.curToken.Value
-	if name != mathRoundFunction && name != mathFloorFunction && name != mathCeilFunction {
+	if name != mathRoundFunction && name != mathTruncFunction && name != mathFloorFunction && name != mathCeilFunction {
 		return nil, ErrUnknownMathFunction
 	}
 
@@ -35,7 +36,7 @@ func (p *Parser) parseMathCall() (*ASTNode, error) {
 
 	var places int64
 
-	if name == mathRoundFunction {
+	if name == mathRoundFunction || name == mathTruncFunction {
 		if p.curToken.Type != COMMA {
 			return nil, ErrInvalidMathArguments
 		}
@@ -104,7 +105,7 @@ func numericTokenText(token Token) string {
 
 func validateMathCallNode(node *ASTNode) error {
 	switch node.Value.StrValue {
-	case mathRoundFunction:
+	case mathRoundFunction, mathTruncFunction:
 		if node.Value.IntValue < 0 || node.Value.IntValue > maxDecimalPlaces {
 			return ErrInvalidMathPrecision
 		}
