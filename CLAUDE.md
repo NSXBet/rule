@@ -37,7 +37,7 @@ The entire specification is defined through comprehensive test cases in `test/fi
 - **Nested Attributes**: Deep object navigation with dot notation
 - **Array Length**: `.length` accessor for array size checks
 - **List Quantifiers**: `any`, `all`, `none` operators for element-level conditions
-- **List Filtering**: `where (predicate)` operator to filter arrays before applying `.length` or a quantifier (proprietary extension; not part of `nikunjy/rules`)
+- **List Filtering**: `where (predicate)` counts matching array elements; one-level `unwrap childField` counts child maps instead of wrappers
 - **Lenient Mode**: opt-in neutral semantics for missing attributes via `NewEngineWithOptions(WithLenientMode())` (proprietary extension; not part of `nikunjy/rules`)
 
 ### Rule Syntax Examples
@@ -58,6 +58,7 @@ selections none (is_fraud eq true)               // no element matches
 items any (price gt 100 and in_stock eq true)    // compound sub-expression
 selections where (odd ge 1.4).length ge 4        // count filtered elements
 selections where (odd ge 1.4) any (provider eq "X") // quantifier on filtered subset
+selections unwrap betBuilderSelections where (odd ge 1.4).length ge 4
 ```
 
 ## Development Commands
@@ -143,8 +144,9 @@ All functionality is validated through the comprehensive test suite in `test/fix
 - **Quantifier `none`**: True if no element matches (true for empty arrays, short-circuits on first match)
 - **Sub-expressions**: Quantifiers support full expressions including `and`, `or`, `not`, all comparison operators
 - **Nested access**: Works with nested properties (e.g., `data.items any (status eq "active")`)
-- **Filter `where`**: `<source> where (<predicate>).length` counts elements matching predicate; `<source> where (<predicate>) any|all|none (<sub>)` applies a quantifier on the filtered subset. Chaining of `where` is not supported. Post-`where` access is restricted to `.length`, `any`, `all`, and `none`.
-- **Reserved words**: `any`, `all`, `none`, `where` are reserved keywords (cannot be used as field names)
+- **Filter `where`**: `<source> where (<predicate>).length` counts matches; `<source> where (<predicate>) any|all|none (<sub>)` applies a quantifier to matching elements.
+- **Unwrap count**: `<source> unwrap <child-array-field> where (<predicate>).length` counts matching child maps instead of wrapper elements when child field exists; otherwise counts source element. One level only; count only.
+- **Reserved words**: `any`, `all`, `none`, `where`, `unwrap` are reserved keywords (cannot be used as field names)
 
 ### Zero-Allocation Implementation
 - **EvalResult Structure**: Pre-allocated typed result structure to avoid interface boxing

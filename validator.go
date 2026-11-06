@@ -74,8 +74,7 @@ func validateBinaryOperation(node *ASTNode) error {
 		return validateQuantifierOperation(node)
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE, PR,
-		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS, WHERE:
-		// Other operators don't need special validation
+		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS, UNWRAP, WHERE:
 		return nil
 	}
 
@@ -93,7 +92,7 @@ func validateUnaryOperation(node *ASTNode) error {
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE,
 		CO, SW, EW, IN, NOT_IN, DQ, DN, BE, BQ, AF, AQ, DL, DG,
-		AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS, WHERE:
+		AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS, UNWRAP, WHERE:
 		// Other operators don't apply to unary operations
 		return nil
 	}

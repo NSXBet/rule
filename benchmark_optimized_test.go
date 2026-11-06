@@ -1,6 +1,7 @@
 package rule
 
 import (
+	"strconv"
 	"testing"
 )
 
@@ -484,6 +485,82 @@ func BenchmarkWhereWithQuantifier(b *testing.B) {
 		b.Fatalf("expected <= 1 allocs/op, got %f", allocs)
 	}
 
+	b.ResetTimer()
+
+	for range b.N {
+		result, err := engine.Evaluate(query, ctx)
+		if err != nil || !result {
+			b.Fatalf("Expected true result, got %v, %v", result, err)
+		}
+	}
+}
+
+func BenchmarkUnwrapCount(b *testing.B) {
+	cases := []struct {
+		name     string
+		roots    int
+		wrappers int
+		children int
+	}{
+		{"Flat8", 8, 0, 0},
+		{"Mixed8x4", 4, 4, 4},
+		{"Wrappers8x4", 0, 8, 4},
+		{"Wrappers64x4", 0, 64, 4},
+		{"Wrappers8x32", 0, 8, 32},
+	}
+
+	for _, tc := range cases {
+		b.Run(tc.name, func(b *testing.B) {
+			source := make([]any, 0, tc.roots+tc.wrappers)
+			expanded := make([]any, 0, tc.roots+tc.wrappers*tc.children)
+
+			for i := range tc.roots {
+				element := D{"odd": float64(i % 2)}
+				source = append(source, element)
+				expanded = append(expanded, element)
+			}
+
+			for range tc.wrappers {
+				children := make([]any, tc.children)
+
+				for i := range children {
+					children[i] = D{"odd": float64(i % 2)}
+				}
+
+				source = append(source, D{"odd": 100, "children": children})
+				expanded = append(expanded, children...)
+			}
+
+			count := strconv.Itoa(len(expanded) / 2)
+			variants := []struct {
+				name  string
+				query string
+				items []any
+			}{
+				{"Unwrap", "items unwrap children where (odd ge 0.5).length eq " + count, source},
+				{"Where", "items where (odd ge 0.5).length eq " + count, expanded},
+			}
+
+			for _, variant := range variants {
+				b.Run(variant.name, func(b *testing.B) {
+					benchmarkUnwrapCountCase(b, variant.query, variant.items)
+				})
+			}
+		})
+	}
+}
+
+func benchmarkUnwrapCountCase(b *testing.B, query string, items []any) {
+	b.Helper()
+
+	engine := NewEngine()
+	ctx := D{"items": items}
+
+	if err := engine.AddQuery(query); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for range b.N {
