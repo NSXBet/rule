@@ -944,6 +944,32 @@ predicate evaluations, not isolated calls to Go `math` functions.
 The existing cached native `x eq 10` benchmark measured 22.88 ns/op with zero
 allocations (median of five runs).
 
+### One-level Unwrap Counts
+
+Measured on Apple M4 Pro, Go 1.26.8. Values are medians of five runs.
+Both variants use cached `Engine.Evaluate` calls, including query-cache lookup.
+Parsing, compilation, and payload construction are excluded.
+
+```bash
+go test . -run '^$' -bench '^BenchmarkUnwrapCount$' -benchmem -benchtime=300ms -count=5
+```
+
+The predicate is `odd ge 0.5`, with half of the evaluated elements matching.
+`Unwrap` traverses the source and its immediate children. `Where` evaluates
+the same elements in a pre-expanded array; its timings exclude expansion cost.
+Each evaluation checks the exact expected count.
+
+| Source shape | Elements tested | Unwrap ns/op | Where ns/op |
+|--------------|-----------------|--------------|-------------|
+| 8 roots, no wrappers | 8 | 256.8 | 204.9 |
+| 4 roots + 4 wrappers with 4 children each | 20 | 506.6 | 435.5 |
+| 8 wrappers with 4 children each | 32 | 723.4 | 663.4 |
+| 64 wrappers with 4 children each | 256 | 5507 | 4865 |
+| 8 wrappers with 32 children each | 256 | 4994 | 4898 |
+
+All variants measured **24 B/op and 1 alloc/op**. These complete count
+evaluations exceed 100 ns; neither variant is allocation-free.
+
 ### Performance Results
 
 Historical comparison benchmarks below ran on `Intel(R) Core(TM) i9-14900KF, Go 1.21+`.
