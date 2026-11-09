@@ -680,23 +680,90 @@ engine.Evaluate(`selections where (odd ge 1.4) all (is_live eq true)`, context) 
 
 #### `where` rules
 
-- `<source> where (<predicate>).length <op> <number>`: counts elements where
-  the predicate is true without materializing a filtered array. Predicate costs
-  still apply, including allocations for exact-decimal math.
+- `<source> where (<predicate>).length <op> <number>`: counts matching source
+  elements without materializing a filtered array.
 - `<source> where (<predicate>) any|all|none (<sub>)` — equivalent to applying
   the quantifier on the filtered subset. Internally rewritten as a single
   quantifier over the source array with a composed predicate.
 - The source must be an identifier or property that resolves to an array of
-  objects.
-- The predicate is a full boolean expression evaluated with each array element
-  as context.
-- Only `.length`, `any`, `all`, and `none` may follow the `where` clause.
-- Chained `where` (`where (...) where (...)`) is **not** supported in this
-  release.
-- `where` is a **reserved keyword** — JSON contexts using a top-level field
-  named `where` will conflict.
-- `where` is a **proprietary extension** that is not part of `nikunjy/rules`.
-  Rules using `where` will not run on that library.
+  objects. Predicates run with each counted element as context.
+- Only `.length`, `any`, `all`, and `none` may follow an ordinary `where`;
+  `unwrap` counts support only `.length`.
+- Chained `where` (`where (...) where (...)`) is not supported.
+- `where` and `unwrap` are reserved keywords: contexts cannot use them as
+  field names.
+- These operators are proprietary extensions not supported by `nikunjy/rules`.
+
+#### One-level `unwrap`
+
+`<source> unwrap <childField> where (<predicate>).length` replaces wrappers
+with their immediate children in the evaluation view, then counts matches.
+It does not return an array or change the supplied context.
+
+```mermaid
+flowchart LR
+    root["Root without child field"] --> predicate["where predicate"]
+    wrapper["Root with child field"] --> first["First child"]
+    wrapper --> second["Second child"]
+    first --> predicate
+    second --> predicate
+    predicate --> count["Matching count"]
+```
+
+```go
+engine := rule.NewEngine()
+context := rule.D{
+    "items": []any{
+        rule.D{"id": "root", "score": 10},
+        rule.D{
+            "id": "wrapper-a", "score": 100,
+            "children": []any{
+                rule.D{"id": "child-a", "score": 20},
+                rule.D{"id": "child-b", "score": 5},
+            },
+        },
+        rule.D{
+            "id": "wrapper-b", "score": 100,
+            "children": []any{
+                rule.D{"id": "child-c", "score": 30},
+            },
+        },
+    },
+}
+
+engine.Evaluate(`items unwrap children where (true).length eq 4`, context)        // true
+engine.Evaluate(`items unwrap children where (score ge 10).length eq 3`, context) // true
+engine.Evaluate(`items unwrap children where (score ge 50).length eq 0`, context) // true
+```
+
+The predicates see `root`, `child-a`, `child-b`, and `child-c`. Neither wrapper
+is evaluated, even though its score would match. Unwrapping stops after one
+child-array level: a child with its own `children` field is evaluated as-is.
+
+**Field and identity collisions**
+
+- Parent and child fields are never combined. A child uses its own `score`,
+  `status`, and other fields; missing fields are not inherited from the wrapper.
+- Equal values, repeated map references, and matching IDs remain separate
+  occurrences. A root and a child with the same ID both count if they match.
+  There is no deduplication or first/last-wins conflict resolution.
+
+**Boundaries and validation**
+
+- The source may be a nested property such as `data.items`. `childField` is
+  one direct field name, not a dotted path.
+- Only `where (...).length` is supported after `unwrap`, not `any`, `all`,
+  `none`, recursive expansion, or a standalone array result.
+- Child-field presence excludes the wrapper even for an empty array, `nil`,
+  or a malformed value. Only `[]any` children containing `map[string]any`
+  elements are evaluated; unsupported values are silently skipped. Validate
+  shape and identity uniqueness before using counts for eligibility or fraud.
+- Strict mode rejects comparisons with missing child fields. Lenient mode
+  can accept them; add presence guards such as
+  `score pr and status pr and score ge 10 and status eq "active"` when required.
+- Work scales with source entries and immediate child entries examined.
+  Bound both input sizes when payloads are untrusted.
+
 
 ---
 
@@ -876,6 +943,32 @@ Float mode used **0 B/op and 0 allocs/op in every row**. These are complete
 predicate evaluations, not isolated calls to Go `math` functions.
 The existing cached native `x eq 10` benchmark measured 22.88 ns/op with zero
 allocations (median of five runs).
+
+### One-level Unwrap Counts
+
+Measured on Apple M4 Pro, Go 1.26.8. Values are medians of five runs.
+Both variants use cached `Engine.Evaluate` calls, including query-cache lookup.
+Parsing, compilation, and payload construction are excluded.
+
+```bash
+go test . -run '^$' -bench '^BenchmarkUnwrapCount$' -benchmem -benchtime=300ms -count=5
+```
+
+The predicate is `odd ge 0.5`, with half of the evaluated elements matching.
+`Unwrap` traverses the source and its immediate children. `Where` evaluates
+the same elements in a pre-expanded array; its timings exclude expansion cost.
+Each evaluation checks the exact expected count.
+
+| Source shape | Elements tested | Unwrap ns/op | Where ns/op |
+|--------------|-----------------|--------------|-------------|
+| 8 roots, no wrappers | 8 | 256.8 | 204.9 |
+| 4 roots + 4 wrappers with 4 children each | 20 | 506.6 | 435.5 |
+| 8 wrappers with 4 children each | 32 | 723.4 | 663.4 |
+| 64 wrappers with 4 children each | 256 | 5507 | 4865 |
+| 8 wrappers with 32 children each | 256 | 4994 | 4898 |
+
+All variants measured **24 B/op and 1 alloc/op**. These complete count
+evaluations exceed 100 ns; neither variant is allocation-free.
 
 ### Performance Results
 
@@ -1065,7 +1158,8 @@ This section provides a comprehensive compatibility analysis between NSXBet/rule
 | **Deep Property Comparison** | Multi-level nested comparisons | `config.max eq system.limits.ceiling` | Complex configuration rules |
 | **List Quantifiers** | `any`, `all`, `none` over arrays | `selections any (status eq "live")` | Element-level checks on arrays |
 | **Array Length** | `.length` accessor on arrays | `items.length ge 3` | Size constraints |
-| **`where` Filter** | Filter arrays by predicate before count or quantifier | `selections where (odd ge 1.4).length ge 4` | Counting / quantifying over filtered subsets. **Reserves the keyword `where`.** |
+| **`where` Filter** | Count or quantify elements matching a predicate | `selections where (odd ge 1.4).length ge 4` | Counting / quantifying over filtered subsets. **Reserves `where`.** |
+| **Conditional `unwrap` Count** | Counts matching source and one-level child maps without counting wrappers | `selections unwrap betBuilderSelections where (odd ge 1.4).length ge 4` | Bet-builder leaf selection rules. **Reserves `unwrap`.** |
 | **Lenient Mode** | Opt-in neutral semantics: missing-attribute comparisons return `true` | `NewEngineWithOptions(rule.WithLenientMode())` | `and`-chains where an optional field should impose no constraint |
 | **rule.D Type Alias** | Cleaner syntax | `rule.D{"key": "value"}` | Developer experience |
 

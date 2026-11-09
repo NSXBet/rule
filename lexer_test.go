@@ -58,6 +58,13 @@ func TestLexerTokenization(t *testing.T) {
 				DOT, IDENTIFIER, EOF,
 			},
 		},
+		{
+			"selections unwrap betBuilderSelections where (odd ge 1.4).length",
+			[]TokenType{
+				IDENTIFIER, UNWRAP, IDENTIFIER, WHERE, PAREN_OPEN, IDENTIFIER, GE, NUMBER,
+				PAREN_CLOSE, DOT, IDENTIFIER, EOF,
+			},
+		},
 	}
 
 	for _, test := range tests {

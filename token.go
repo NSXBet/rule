@@ -53,7 +53,8 @@ const (
 	EQUALS     // ==
 	NOT_EQUALS //nolint:revive,staticcheck // Token constants use ALL_CAPS convention
 
-	// WHERE represents the list filtering operator.
+	// UNWRAP applies a child-array field while counting a where expression.
+	UNWRAP
 	WHERE
 )
 
@@ -93,6 +94,7 @@ var keywordMap = map[string]TokenType{
 	"any":      ANY,
 	"all":      ALL,
 	"none":     NONE,
+	"unwrap":   UNWRAP,
 	"where":    WHERE,
 	trueString: BOOLEAN,
 	"false":    BOOLEAN,
@@ -137,6 +139,7 @@ var tokenStringMap = map[TokenType]string{
 	ANY:         "any",
 	ALL:         "all",
 	NONE:        "none",
+	UNWRAP:      "unwrap",
 	WHERE:       "where",
 	EQUALS:      "==",
 	NOT_EQUALS:  "!=",

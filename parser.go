@@ -147,13 +147,33 @@ func (p *Parser) parseWhereExpression() (*ASTNode, error) {
 		return nil, err
 	}
 
-	// where can only follow an identifier/property (array source)
-	if p.curToken.Type != WHERE {
+	if left.Type != NodeIdentifier && left.Type != NodeProperty {
+		if p.curToken.Type == UNWRAP || p.curToken.Type == WHERE {
+			return nil, ErrWhereRequiresParens
+		}
+
 		return left, nil
 	}
 
-	if left.Type != NodeIdentifier && left.Type != NodeProperty {
-		return nil, ErrWhereRequiresParens
+	unwrapField := ""
+
+	if p.curToken.Type == UNWRAP {
+		p.advance()
+
+		if p.curToken.Type != IDENTIFIER {
+			return nil, ErrInvalidUnwrapField
+		}
+
+		unwrapField = p.curToken.Value
+		p.advance()
+	}
+
+	if p.curToken.Type != WHERE {
+		if unwrapField != "" {
+			return nil, ErrWhereRequiresLengthOrQuantifier
+		}
+
+		return left, nil
 	}
 
 	p.advance()
@@ -178,14 +198,17 @@ func (p *Parser) parseWhereExpression() (*ASTNode, error) {
 	}
 
 	result := NewWhereCountNode(left, predicate)
+	result.UnwrapField = unwrapField
 
 	switch p.curToken.Type { //nolint:exhaustive // only DOT and quantifiers are valid here
 	case DOT:
 		return p.parseWhereWithLength(result)
-
 	case ANY, ALL, NONE:
-		return p.parseWhereWithQuantifier(result, p.curToken.Type)
+		if unwrapField != "" {
+			return nil, ErrWhereRequiresLengthOrQuantifier
+		}
 
+		return p.parseWhereWithQuantifier(result, p.curToken.Type)
 	default:
 		return nil, ErrWhereRequiresLengthOrQuantifier
 	}
@@ -372,6 +395,7 @@ func (p *Parser) parsePrimaryExpression() (*ASTNode, error) {
 		NONE,
 		EQUALS,
 		NOT_EQUALS,
+		UNWRAP,
 		WHERE:
 		return nil, fmt.Errorf("unexpected token %s at position %d", p.curToken.Type, p.current)
 
@@ -466,6 +490,7 @@ func (p *Parser) parseArray() (*ASTNode, error) {
 				NONE,
 				EQUALS,
 				NOT_EQUALS,
+				UNWRAP,
 				WHERE:
 				return nil, fmt.Errorf("unexpected token in array: %s", p.curToken.Type)
 			default:
@@ -565,6 +590,7 @@ func (p *Parser) isComparisonOperator(tokenType TokenType) bool {
 		ANY,
 		ALL,
 		NONE,
+		UNWRAP,
 		WHERE:
 		return false
 	default:
@@ -578,6 +604,7 @@ func (p *Parser) isValue(tokenType TokenType) bool {
 		return true
 	case EOF, ARRAY_END, PAREN_OPEN, PAREN_CLOSE, DOT, COMMA,
 		EQ, NE, LT, GT, LE, GE, CO, SW, EW, IN, NOT_IN, PR,
+		UNWRAP,
 		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, ANY, ALL, NONE, EQUALS, NOT_EQUALS, WHERE:
 		return false
 	default:

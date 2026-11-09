@@ -18,10 +18,10 @@ There are some constraints:
 - Presence: `pr`
 - DateTime: `dq`, `dn`, `be`, `bq`, `af`, `aq`, `dl`, `dg`
 - Logical: `and`, `or`, `not`
-- List: `.length`, `any`, `all`, `none`
-- List filtering (proprietary extension): `where (predicate)` followed by `.length` or a quantifier (`any`, `all`, `none`).
-  Examples: `selections where (odd ge 1.4).length ge 4`, `selections where (odd ge 1.4) any (provider eq "X")`.
-  Not part of `nikunjy/rules`.
+- List filtering: `where (predicate)` followed by `.length` or quantifiers.
+- One-level unwrap counts: `source unwrap childField where (predicate).length`.
+  A present child field excludes its wrapper and evaluates child maps instead.
+  This extension is not part of `nikunjy/rules`.
 
 ## Coding guidelines
 

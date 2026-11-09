@@ -232,6 +232,7 @@ func (e *Evaluator) evaluateUnaryOp(node *ASTNode, context D, result *EvalResult
 		NONE,
 		EQUALS,
 		NOT_EQUALS,
+		UNWRAP,
 		WHERE:
 		return ErrInvalidOperator // These are not unary operators
 	default:
@@ -262,6 +263,7 @@ func (e *Evaluator) evaluateBinaryOp(node *ASTNode, context D, result *EvalResul
 		COMMA,
 		PR,
 		NOT,
+		UNWRAP,
 		WHERE:
 		result.IsValid = false
 		return ErrInvalidOperator // These are not binary operators
@@ -347,60 +349,95 @@ func (e *Evaluator) setPresenceResult(result *EvalResult, exists bool) {
 	result.IsValid = true
 }
 
-// evaluateWhereCount counts matches without materializing a filtered array.
+// evaluateWhereCount counts matching source and child values without materializing an intermediate slice.
 func (e *Evaluator) evaluateWhereCount(node *ASTNode, context D, result *EvalResult) error {
-	result.IsValid = true
-	result.Type = ValueNumber
-	result.IsInt = true
-	result.Num = 0
-	result.IntValue = 0
-	result.Bool = false
-	result.Str = ""
-	result.Arr = nil
+	*result = EvalResult{Type: ValueNumber, IsInt: true, IsValid: true}
 
-	// Evaluate source to get the array
 	var sourceResult EvalResult
 	if err := e.evaluateNode(node.Left, context, &sourceResult); err != nil {
 		return err
 	}
 
-	// If source is not valid or not an array, return count 0
 	if !sourceResult.IsValid || sourceResult.Type != ValueArray {
 		return nil
 	}
 
-	// Get the array from OriginalValue
 	arr, ok := sourceResult.OriginalValue.([]any)
 	if !ok {
 		return nil
 	}
 
-	// Count elements that satisfy predicate
 	predicate := node.Children[0]
-	count := int64(0)
 
 	var predicateResult EvalResult
 
-	for _, elem := range arr {
-		elemMap, isMap := elem.(map[string]any)
+	count := int64(0)
+
+	for _, element := range arr {
+		elementMap, isMap := element.(map[string]any)
 		if !isMap {
 			continue
 		}
 
-		predicateResult.IsValid = false
-		predicateResult.OriginalValue = nil
+		if node.UnwrapField == "" {
+			if err := e.countWhereElement(predicate, elementMap, &predicateResult, &count); err != nil {
+				return err
+			}
 
-		if predErr := e.evaluateNode(predicate, elemMap, &predicateResult); predErr != nil {
-			return predErr
+			continue
 		}
 
-		if e.toBool(&predicateResult) {
-			count++
+		children, isWrapper := elementMap[node.UnwrapField]
+		if !isWrapper {
+			if err := e.countWhereElement(predicate, elementMap, &predicateResult, &count); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		if err := e.countWhereChildren(predicate, children, &predicateResult, &count); err != nil {
+			return err
 		}
 	}
 
 	result.Num = float64(count)
 	result.IntValue = count
+
+	return nil
+}
+
+func (e *Evaluator) countWhereChildren(predicate *ASTNode, value any, result *EvalResult, count *int64) error {
+	children, ok := value.([]any)
+	if !ok {
+		return nil
+	}
+
+	for _, child := range children {
+		if err := e.countWhereElement(predicate, child, result, count); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Evaluator) countWhereElement(predicate *ASTNode, element any, result *EvalResult, count *int64) error {
+	elementMap, ok := element.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	result.IsValid = false
+
+	result.OriginalValue = nil
+	if err := e.evaluateNode(predicate, elementMap, result); err != nil {
+		return err
+	}
+
+	if e.toBool(result) {
+		*count++
+	}
 
 	return nil
 }
@@ -730,6 +767,7 @@ func (e *Evaluator) performComparison(
 		ANY,
 		ALL,
 		NONE,
+		UNWRAP,
 		WHERE:
 		result.IsValid = false
 		return ErrInvalidOperator
