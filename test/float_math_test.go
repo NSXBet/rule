@@ -54,6 +54,15 @@ func TestFloatMath(t *testing.T) {
 		{"max float unscaled", "round(value, 0) eq value", rule.D{"value": math.MaxFloat64}, true},
 		{"largest finite scale", "round(value, 308) gt 0", rule.D{"value": math.SmallestNonzeroFloat64}, false},
 		{"quantifier", "items all (round(value, 2) eq 1)", rule.D{"items": []any{rule.D{"value": 1.005}}}, true},
+		{"positive truncation", "trunc(value, 2) eq 1.23", rule.D{"value": 1.239}, true},
+		{"negative truncation", "trunc(value, 2) eq -1.23", rule.D{"value": -1.239}, true},
+		{"positive truncation at zero places", "trunc(1.9, 0) eq 1", nil, true},
+		{"negative truncation at zero places", "trunc(-1.9, 0) eq -1", nil, true},
+		{"negative truncates toward zero", "trunc(-2.9, 0) eq -2", nil, true},
+		{"truncated magnitude below unit becomes zero", "trunc(-0.009, 2) eq 0", nil, true},
+		{"json number truncation", "trunc(value, 2) eq 1.23", rule.D{"value": json.Number("1.239")}, true},
+		{"nested truncation comparison", "trunc(trunc(value, 3), 2) eq expected", rule.D{"value": -1.2399, "expected": -1.23}, true},
+		{"truncated value in comparison", "trunc(value, 2) gt 1.22", rule.D{"value": 1.239}, true},
 	}
 	engine := rule.NewEngineWithOptions(rule.WithFloatMath())
 
@@ -90,6 +99,10 @@ func TestFloatMathInvalidInputs(t *testing.T) {
 		{"product overflow", "round(value, 2) ge 0", math.MaxFloat64, rule.ErrFloatMathOverflow},
 		{"literal overflow", "floor(1" + strings.Repeat("0", 309) + ") ge 0", nil, rule.ErrInvalidDecimal},
 		{"datetime operator", "round(value, 2) dq 1", 1.2, rule.ErrInvalidMathOperand},
+		{"trunc scale overflow", "trunc(value, 309) ge 0", 1.2, rule.ErrFloatMathOverflow},
+		{"trunc product overflow", "trunc(value, 2) ge 0", math.MaxFloat64, rule.ErrFloatMathOverflow},
+		{"trunc invalid operand", "trunc(value, 2) ge 0", true, rule.ErrInvalidMathOperand},
+		{"trunc conversion overflow", "trunc(value, 0) ge 0", json.Number("1e309"), rule.ErrFloatMathOverflow},
 	}
 	engine := rule.NewEngineWithOptions(rule.WithFloatMath())
 
@@ -149,7 +162,7 @@ func TestFloatMathLenient(t *testing.T) {
 func TestFloatMathAllocations(t *testing.T) {
 	engine := rule.NewEngineWithOptions(rule.WithFloatMath())
 
-	compiled, err := engine.CompileRule("round(value, 2) eq 1.23 and floor(value) eq 1 and ceil(value) eq 2")
+	compiled, err := engine.CompileRule("round(value, 2) eq 1.23 and trunc(value, 2) eq 1.23 and floor(value) eq 1 and ceil(value) eq 2")
 	if err != nil {
 		t.Fatal(err)
 	}

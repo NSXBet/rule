@@ -749,7 +749,7 @@ func Example_lenientMode() {
 	// lenient age eq 18 and status eq settled (status=pending): false
 }
 
-// Example_decimalMath demonstrates exact decimal rounding in predicates.
+// Example_decimalMath demonstrates exact decimal math in predicates.
 func Example_decimalMath() {
 	engine := rule.NewEngine()
 	context := rule.D{
@@ -760,7 +760,8 @@ func Example_decimalMath() {
 	for _, query := range []string{
 		"round(amount, 2) eq 9007199254740993.13",
 		"round(refund, 2) eq -1.01",
-		"floor(refund) eq -2 and ceil(refund) eq -1",
+		"trunc(refund, 2) eq -1",
+		"trunc(refund, 0) eq -1 and floor(refund) eq -2 and ceil(refund) eq -1",
 	} {
 		result, err := engine.Evaluate(query, context)
 		if err != nil {
@@ -773,7 +774,8 @@ func Example_decimalMath() {
 	// Output:
 	// round(amount, 2) eq 9007199254740993.13: true
 	// round(refund, 2) eq -1.01: true
-	// floor(refund) eq -2 and ceil(refund) eq -1: true
+	// trunc(refund, 2) eq -1: true
+	// trunc(refund, 0) eq -1 and floor(refund) eq -2 and ceil(refund) eq -1: true
 }
 
 // Example_floatMath demonstrates the explicit floating-point rounding tradeoff.

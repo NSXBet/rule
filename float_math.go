@@ -47,13 +47,18 @@ func evaluateFloatMathCall(node *ASTNode, operand, result *EvalResult) error {
 	}
 
 	switch node.Value.StrValue {
-	case mathRoundFunction:
+	case mathRoundFunction, mathTruncFunction:
 		scaled := value * node.floatScale
 		if math.IsInf(node.floatScale, 0) || math.IsInf(scaled, 0) {
 			return ErrFloatMathOverflow
 		}
 
-		value = math.Round(scaled) / node.floatScale
+		if node.Value.StrValue == mathRoundFunction {
+			value = math.Round(scaled)
+		} else {
+			value = math.Trunc(scaled)
+		}
+		value /= node.floatScale
 	case mathFloorFunction:
 		value = math.Floor(value)
 	case mathCeilFunction:
