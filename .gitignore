@@ -34,3 +34,4 @@ go.work.sum
 *.prof
 .hive-mind
 .claude-flow
+.DS_Store
