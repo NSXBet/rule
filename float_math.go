@@ -58,6 +58,7 @@ func evaluateFloatMathCall(node *ASTNode, operand, result *EvalResult) error {
 		} else {
 			value = math.Trunc(scaled)
 		}
+
 		value /= node.floatScale
 	case mathFloorFunction:
 		value = math.Floor(value)

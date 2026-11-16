@@ -61,7 +61,12 @@ func TestFloatMath(t *testing.T) {
 		{"negative truncates toward zero", "trunc(-2.9, 0) eq -2", nil, true},
 		{"truncated magnitude below unit becomes zero", "trunc(-0.009, 2) eq 0", nil, true},
 		{"json number truncation", "trunc(value, 2) eq 1.23", rule.D{"value": json.Number("1.239")}, true},
-		{"nested truncation comparison", "trunc(trunc(value, 3), 2) eq expected", rule.D{"value": -1.2399, "expected": -1.23}, true},
+		{
+			"nested truncation comparison",
+			"trunc(trunc(value, 3), 2) eq expected",
+			rule.D{"value": -1.2399, "expected": -1.23},
+			true,
+		},
 		{"truncated value in comparison", "trunc(value, 2) gt 1.22", rule.D{"value": 1.239}, true},
 	}
 	engine := rule.NewEngineWithOptions(rule.WithFloatMath())
@@ -162,7 +167,9 @@ func TestFloatMathLenient(t *testing.T) {
 func TestFloatMathAllocations(t *testing.T) {
 	engine := rule.NewEngineWithOptions(rule.WithFloatMath())
 
-	compiled, err := engine.CompileRule("round(value, 2) eq 1.23 and trunc(value, 2) eq 1.23 and floor(value) eq 1 and ceil(value) eq 2")
+	compiled, err := engine.CompileRule(
+		"round(value, 2) eq 1.23 and trunc(value, 2) eq 1.23 and floor(value) eq 1 and ceil(value) eq 2",
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

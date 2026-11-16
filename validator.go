@@ -75,6 +75,11 @@ func validateBinaryOperation(node *ASTNode) error {
 	case EOF, IDENTIFIER, STRING, NUMBER, BOOLEAN, ARRAY_START, ARRAY_END,
 		PAREN_OPEN, PAREN_CLOSE, DOT, COMMA, EQ, NE, LT, GT, LE, GE, PR,
 		DQ, DN, BE, BQ, AF, AQ, DL, DG, AND, OR, NOT, EQUALS, NOT_EQUALS, UNWRAP, WHERE:
+		if (node.Left.Type == NodeMathCall || node.Right.Type == NodeMathCall) &&
+			!isMathComparison(node.Operator) && node.Operator != AND && node.Operator != OR {
+			return ErrInvalidMathOperand
+		}
+
 		return nil
 	}
 

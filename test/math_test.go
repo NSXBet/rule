@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/NSXBet/rule"
 )
 
@@ -102,13 +104,106 @@ func TestZeroStringNormalization(t *testing.T) {
 }
 
 func TestMathNonMathComparisons(t *testing.T) {
-	for _, engine := range []*rule.Engine{rule.NewEngine(), rule.NewEngineWithOptions(rule.WithFloatMath())} {
-		for _, query := range []string{"floor(value) dq 123", "123 dq floor(value)"} {
-			_, err := engine.Evaluate(query, rule.D{"value": 123.5})
-			if !errors.Is(err, rule.ErrInvalidMathOperand) {
-				t.Errorf("Evaluate(%q) error = %v; want %v", query, err, rule.ErrInvalidMathOperand)
-			}
+	t.Parallel()
+
+	for _, operator := range []string{"dq", "dn", "be", "bq", "af", "aq", "dl", "dg", "co", "sw", "ew"} {
+		want := rule.ErrInvalidMathOperand
+		if operator == "co" || operator == "sw" || operator == "ew" {
+			want = rule.ErrInvalidStringOp
 		}
+
+		for _, query := range []string{"floor(value) " + operator + " 123", "123 " + operator + " floor(value)"} {
+			t.Run(query, func(t *testing.T) {
+				t.Parallel()
+
+				_, err := rule.ParseRule(query)
+				require.ErrorIs(t, err, want)
+
+				for mode, engine := range map[string]*rule.Engine{
+					"exact/strict":  rule.NewEngine(),
+					"float/strict":  rule.NewEngineWithOptions(rule.WithFloatMath()),
+					"exact/lenient": rule.NewEngineWithOptions(rule.WithLenientMode()),
+					"float/lenient": rule.NewEngineWithOptions(rule.WithFloatMath(), rule.WithLenientMode()),
+				} {
+					_, err = engine.CompileRule(query)
+					require.ErrorIs(t, err, want, mode)
+					_, err = engine.Evaluate(query, rule.D{"value": 123.5})
+					require.ErrorIs(t, err, want, mode)
+				}
+			})
+		}
+	}
+}
+
+func TestMathSupportedComparisons(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		query string
+		want  bool
+	}{
+		{"floor(1.9) eq 1", true},
+		{"1 eq floor(1.9)", true},
+		{"floor(1.9) == 1", true},
+		{"1 == floor(1.9)", true},
+		{"floor(1.9) ne 1", false},
+		{"1 ne floor(1.9)", false},
+		{"floor(1.9) != 1", false},
+		{"1 != floor(1.9)", false},
+		{"floor(1.9) lt 2", true},
+		{"0 lt floor(1.9)", true},
+		{"floor(1.9) le 1", true},
+		{"1 le floor(1.9)", true},
+		{"floor(1.9) gt 0", true},
+		{"2 gt floor(1.9)", true},
+		{"floor(1.9) ge 1", true},
+		{"1 ge floor(1.9)", true},
+		{"floor(1.9) in [0, 1]", true},
+		{"floor(1.9) not in [0, 2]", true},
+		{"floor(1.9) in options", true},
+		{"floor(1.9) not in options", false},
+		{"floor(1.9) and true", true},
+		{"true and floor(1.9)", true},
+		{"floor(0.9) and true", false},
+		{"true and floor(0.9)", false},
+		{"floor(1.9) or false", true},
+		{"false or floor(1.9)", true},
+		{"floor(0.9) or false", false},
+		{"false or floor(0.9)", false},
+		{"123 dq 123", true},
+		{"123 dn 124", true},
+		{"123 be 124", true},
+		{"123 bq 123", true},
+		{"123 af 122", true},
+		{"123 aq 123", true},
+		{"0 dl 1000000", true},
+		{"0 dg 1", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.query, func(t *testing.T) {
+			t.Parallel()
+
+			if _, err := rule.ParseRule(tt.query); err != nil {
+				t.Fatalf("ParseRule(%q): %v", tt.query, err)
+			}
+
+			for mode, engine := range map[string]*rule.Engine{
+				"exact/strict":  rule.NewEngine(),
+				"float/strict":  rule.NewEngineWithOptions(rule.WithFloatMath()),
+				"exact/lenient": rule.NewEngineWithOptions(rule.WithLenientMode()),
+				"float/lenient": rule.NewEngineWithOptions(rule.WithFloatMath(), rule.WithLenientMode()),
+			} {
+				compiled, err := engine.CompileRule(tt.query)
+				if err != nil {
+					t.Fatalf("%s CompileRule(%q): %v", mode, tt.query, err)
+				}
+
+				got, err := engine.EvaluateCompiled(compiled, rule.D{"options": []any{0, 1}})
+				if err != nil || got != tt.want {
+					t.Errorf("%s EvaluateCompiled(%q) = %v, %v; want %v, nil", mode, tt.query, got, err, tt.want)
+				}
+			}
+		})
 	}
 }
 
@@ -231,7 +326,12 @@ func TestDecimalMath(t *testing.T) {
 			true,
 		},
 		{"maximum truncation precision", "trunc(value, 1000) eq 1.239", rule.D{"value": json.Number("1.239")}, true},
-		{"nested truncation comparison", "trunc(trunc(value, 3), 2) eq expected", rule.D{"value": -1.2399, "expected": -1.23}, true},
+		{
+			"nested truncation comparison",
+			"trunc(trunc(value, 3), 2) eq expected",
+			rule.D{"value": -1.2399, "expected": -1.23},
+			true,
+		},
 		{"truncated value in comparison", "trunc(value, 2) gt 1.22", rule.D{"value": 1.239}, true},
 	}
 	engine := rule.NewEngine()

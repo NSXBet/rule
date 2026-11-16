@@ -1,6 +1,9 @@
 package rule
 
-import "math/big"
+import (
+	"math/big"
+	"strconv"
+)
 
 type NodeType uint8
 
@@ -162,4 +165,17 @@ func (n *ASTNode) IsLiteral() bool {
 
 func (n *ASTNode) IsIdentifier() bool {
 	return n.Type == NodeIdentifier || n.Type == NodeProperty
+}
+
+// NumberText returns the original numeric literal text or the stored number's decimal representation.
+func (v Value) NumberText() string {
+	if v.numberText != "" {
+		return v.numberText
+	}
+
+	if v.IsInt {
+		return strconv.FormatInt(v.IntValue, 10)
+	}
+
+	return strconv.FormatFloat(v.NumValue, 'g', -1, 64)
 }

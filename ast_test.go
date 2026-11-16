@@ -198,3 +198,84 @@ func TestASTNodeConstructors(t *testing.T) {
 		t.Error("Array literal third element incorrect")
 	}
 }
+
+func TestValueNumberTextParsedLiterals(t *testing.T) {
+	t.Parallel()
+
+	for _, text := range []string{
+		"0",
+		"-0.000",
+		"001.2300",
+		"9007199254740993.12500",
+		"1.12345678901234567890123456789",
+		"1.0049999999999999999999",
+		"9007199254740993",
+		"-9223372036854775808",
+		"9223372036854775807",
+	} {
+		t.Run(text, func(t *testing.T) {
+			t.Parallel()
+
+			node, err := ParseRule("value eq " + text)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got := node.Right.Value.NumberText(); got != text {
+				t.Errorf("NumberText() = %q; want %q", got, text)
+			}
+		})
+	}
+}
+
+func TestValueNumberTextParsedArray(t *testing.T) {
+	t.Parallel()
+
+	node, err := ParseRule("value in [9007199254740993.12500, -0.000, 9007199254740993, " +
+		"001.2300, 1.0049999999999999999999]")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for index, want := range []string{
+		"9007199254740993.12500",
+		"-0.000",
+		"9007199254740993",
+		"001.2300",
+		"1.0049999999999999999999",
+	} {
+		if got := node.Right.Value.ArrValue[index].NumberText(); got != want {
+			t.Errorf("array[%d].NumberText() = %q; want %q", index, got, want)
+		}
+	}
+}
+
+func TestValueNumberTextConstructedNumbers(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value Value
+		want  string
+	}{
+		{"decimal", NewNumberLiteralNode(1.125).Value, "1.125"},
+		{"negative", NewNumberLiteralNode(-1.125).Value, "-1.125"},
+		{"zero", NewNumberLiteralNode(0).Value, "0"},
+		{"float integer", NewNumberLiteralNode(42).Value, "42"},
+		{"large integer", NewLargeIntegerLiteralNode(9007199254740993).Value, "9007199254740993"},
+		{"min int64", NewLargeIntegerLiteralNode(-9223372036854775808).Value, "-9223372036854775808"},
+		{"max int64", NewLargeIntegerLiteralNode(9223372036854775807).Value, "9223372036854775807"},
+		{"integer field wins", Value{Type: ValueNumber, NumValue: 1, IsInt: true, IntValue: 42}, "42"},
+		{"integer zero wins", Value{Type: ValueNumber, NumValue: 42, IsInt: true}, "0"},
+		{"float field wins", Value{Type: ValueNumber, NumValue: 1.125, IntValue: 42}, "1.125"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := tt.value.NumberText(); got != tt.want {
+				t.Errorf("NumberText() = %q; want %q", got, tt.want)
+			}
+		})
+	}
+}
