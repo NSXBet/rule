@@ -4,7 +4,6 @@ import (
 	"errors"
 	"math"
 	"math/big"
-	"strconv"
 )
 
 const (
@@ -137,15 +136,7 @@ func validateMathOperand(node *ASTNode) error {
 			return ErrInvalidMathOperand
 		}
 
-		text := node.Value.numberText
-		if text == "" {
-			text = strconv.FormatFloat(node.Value.NumValue, 'g', -1, 64)
-			if node.Value.IsInt {
-				text = strconv.FormatInt(node.Value.IntValue, decimalRadix)
-			}
-		}
-
-		_, err := parseDecimal(text)
+		_, err := parseDecimal(node.Value.NumberText())
 
 		return err
 	case NodeBinaryOp, NodeUnaryOp, NodeArray:

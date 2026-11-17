@@ -291,6 +291,11 @@ integers are exact; `float32` and `float64` inputs use their shortest round-trip
 decimal representation. Precision lost before evaluation cannot be recovered.
 Numeric strings are not coerced.
 
+When serializing an AST, call `Value.NumberText()` for `ValueNumber` values to
+preserve the original literal text, including array elements. For numbers
+constructed in Go, it formats `IntValue` when `IsInt` is true; otherwise it
+formats `NumValue` using its shortest round-trip representation.
+
 In default mode, math results and `json.Number` values use exact numeric comparisons,
 including `in` and `not in`. String and datetime operators on `json.Number` values
 use their float64 projection, with the same precision and range limits as native
@@ -298,7 +303,8 @@ float64 inputs. Native-number comparisons without these values retain their
 existing behavior. Missing arguments retain strict/lenient missing-attribute
 semantics. Explicit `nil`, nonnumeric operands, malformed decimals, and
 nonfinite floats produce typed errors instead of approximate results.
-Math results do not support string or datetime operators.
+Math results do not support string or datetime operators. `ParseRule` and
+`CompileRule` reject those operators when either operand is a math call.
 String operators normalize numeric zero, including negative zero and float64
 underflow to zero, to `"0"` in both modes. String inputs such as `"-0"` are
 unchanged.
