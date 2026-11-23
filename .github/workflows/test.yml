@@ -13,7 +13,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version: '1.26.x'
       - name: golangci-lint
         uses: nsx-actions/golangci_golangci-lint-action@v7
         with:
